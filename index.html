@@ -1,41 +1,101 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mandelbulb Explorer</title>
-  <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandelbulb Explorer</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
-  <canvas id="glCanvas" aria-label="Mandelbulb viewport"></canvas>
+    <canvas id="glCanvas" aria-label="Mandelbulb viewport"></canvas>
 
-  <button id="helpButton" class="overlay-button" type="button" aria-haspopup="dialog" aria-controls="helpDialog">
-    Help
-  </button>
-
-  <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
-    <div class="help-card">
-      <div class="help-header">
-        <h2 id="helpTitle">Movement Basics</h2>
-        <button id="closeHelpButton" class="close-button" type="button" aria-label="Close help">Close</button>
-      </div>
-      <p>Use these controls from <code>bufferA.glsl</code> to navigate:</p>
-      <ul>
-        <li><strong>Move forward/back:</strong> W / S</li>
-        <li><strong>Strafe left/right:</strong> A / D</li>
-        <li><strong>Move up/down:</strong> E / Q</li>
-        <li><strong>Look around:</strong> Arrow keys</li>
-        <li><strong>Sprint:</strong> Hold Shift</li>
-        <li><strong>Movement step:</strong> Z (smaller) / X (larger)</li>
-        <li><strong>Zoom (FOV):</strong> - (wider) / + (narrower)</li>
-      </ul>
+    <div class="overlay-controls">
+        <button id="helpButton" class="overlay-button" type="button" aria-haspopup="dialog" aria-controls="helpDialog">
+            Help
+        </button>
+        <button id="settingsButton" class="overlay-button" type="button" aria-haspopup="dialog"
+            aria-controls="settingsDialog">
+            Settings
+        </button>
     </div>
-  </div>
 
-  <div class="signature">Brendon Maia</div>
+    <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+        <div class="help-card">
+            <div class="help-header">
+                <h2 id="helpTitle">Movement Basics</h2>
+                <button id="closeHelpButton" class="close-button" type="button" aria-label="Close help">Close</button>
+            </div>
+            <p>Use these controls to navigate:</p>
+            <ul>
+                <li><strong>Move forward/back:</strong> W / S</li>
+                <li><strong>Strafe left/right:</strong> A / D</li>
+                <li><strong>Move up/down:</strong> E / Q</li>
+                <li><strong>Look around:</strong> Arrow keys</li>
+                <li><strong>Sprint:</strong> Hold Shift</li>
+                <li><strong>Movement step:</strong> Z (smaller) / X (larger)</li>
+                <li><strong>Zoom (FOV):</strong> - (wider) / + (narrower)</li>
+            </ul>
+        </div>
+    </div>
 
-  <div id="errorBanner" class="error-banner" hidden></div>
+    <div id="settingsDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
+        <div class="help-card settings-card">
+            <div class="help-header">
+                <h2 id="settingsTitle">Rendering Settings</h2>
+                <button id="closeSettingsButton" class="close-button" type="button"
+                    aria-label="Close settings">Close</button>
+            </div>
 
-  <script type="module" src="./main.js"></script>
+            <label class="setting-row" for="minHitSlider">
+                <span>MIN_HIT (base-10 slider)</span>
+                <div class="setting-inline">
+                    <input id="minHitSlider" type="range" min="-6" max="-2" step="0.01" value="-4">
+                    <output id="minHitValue" class="setting-value">1.00e-4</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="modeSelect">
+                <span>Mandelbulb mode</span>
+                <select id="modeSelect">
+                    <option value="1">Mode 1</option>
+                    <option value="2">Mode 2</option>
+                    <option value="3">Mode 3</option>
+                </select>
+            </label>
+
+            <label class="setting-row" for="maxDistSlider">
+                <span>Ray distance</span>
+                <div class="setting-inline">
+                    <input id="maxDistSlider" type="range" min="8" max="80" step="1" value="30">
+                    <output id="maxDistValue" class="setting-value">30.0</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="glowSlider">
+                <span>Glow strength</span>
+                <div class="setting-inline">
+                    <input id="glowSlider" type="range" min="0" max="2" step="0.01" value="1">
+                    <output id="glowValue" class="setting-value">1.00</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="stepTintSlider">
+                <span>Step tint blend</span>
+                <div class="setting-inline">
+                    <input id="stepTintSlider" type="range" min="0" max="1" step="0.01" value="1">
+                    <output id="stepTintValue" class="setting-value">1.00</output>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="signature">Brendon Maia</div>
+
+    <div id="errorBanner" class="error-banner" hidden></div>
+
+    <script type="module" src="./main.js"></script>
 </body>
+
 </html>

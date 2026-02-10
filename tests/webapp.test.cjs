@@ -31,7 +31,16 @@ describe("Mandelbulb web app smoke suite", () => {
 
     expect(html).toMatch(/<canvas[^>]*id=["']glCanvas["']/i);
     expect(html).toMatch(/id=["']helpButton["']/i);
+    expect(html).toMatch(/id=["']settingsButton["']/i);
     expect(html).toMatch(/id=["']helpDialog["']/i);
+    expect(html).toMatch(/id=["']settingsDialog["']/i);
+    expect(html).toMatch(/id=["']minHitSlider["']/i);
+    expect(html).toMatch(/id=["']minHitValue["']/i);
+    expect(html).toMatch(/id=["']modeSelect["']/i);
+    expect(html).toMatch(/id=["']maxDistSlider["']/i);
+    expect(html).toMatch(/id=["']glowSlider["']/i);
+    expect(html).toMatch(/id=["']stepTintSlider["']/i);
+    expect(html).not.toMatch(/EPS/);
     expect(html).toMatch(/Brendon Maia/);
     expect(html).toMatch(/src=["']\.\/main\.js["']/i);
     expect(html).toMatch(/href=["']\.\/style\.css["']/i);
@@ -83,5 +92,37 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/texelFetch\(iChannel0,\s*ivec2\(1,0\),\s*0\)/);
     expect(imageShader).toMatch(/float\s+FOV\s*=\s*s1\.z/);
     expect(imageShader).toMatch(/void\s+mainImage\s*\(/);
+  });
+
+  test("mainImage shader exposes settings uniforms and mode logic", () => {
+    const imageShader = readProjectFile("mainImage.glsl");
+
+    expect(imageShader).toMatch(/uniform\s+float\s+uMinHit\s*;/);
+    expect(imageShader).toMatch(/uniform\s+float\s+uEps\s*;/);
+    expect(imageShader).toMatch(/uniform\s+int\s+uMode\s*;/);
+    expect(imageShader).toMatch(/uniform\s+float\s+uMaxDist\s*;/);
+    expect(imageShader).toMatch(/uniform\s+float\s+uGlowStrength\s*;/);
+    expect(imageShader).toMatch(/uniform\s+float\s+uStepTint\s*;/);
+    expect(imageShader).toMatch(/uMode\s*==\s*2/);
+    expect(imageShader).toMatch(/uMode\s*==\s*3/);
+    expect(imageShader).toMatch(/vec3\s+z\s*=\s*\(uMode\s*==\s*3\)\s*\?\s*sin\(p\)\s*:\s*p\s*;/);
+    expect(imageShader).toMatch(/float\s+d\s*=\s*mapScene\(p\)\s*;/);
+    expect(imageShader).toMatch(/t\s*>\s*uMaxDist/);
+    expect(imageShader).toMatch(/d\s*<\s*uMinHit/);
+  });
+
+  test("main.js wires MIN_HIT and mode settings uniforms", () => {
+    const source = readProjectFile("main.js");
+
+    expect(source).toContain("uMinHit");
+    expect(source).toContain("uEps");
+    expect(source).toContain("uMode");
+    expect(source).toContain("uMaxDist");
+    expect(source).toContain("uGlowStrength");
+    expect(source).toContain("uStepTint");
+    expect(source).toContain("minHitValue * 5.0");
+    expect(source).toContain("Math.pow(10");
+    expect(source).toContain("settingsButton");
+    expect(source).toContain("modeValue");
   });
 });

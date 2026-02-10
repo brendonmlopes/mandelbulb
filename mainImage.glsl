@@ -5,10 +5,13 @@
 precision highp float;
 #endif
 
-const float MAX_DIST  = 30.0;
 const int   MAX_STEPS = 300;
-const float MIN_HIT   = 0.0001;
-const float EPS       = 0.0005;
+uniform float uMinHit;
+uniform float uEps;
+uniform int uMode;
+uniform float uMaxDist;
+uniform float uGlowStrength;
+uniform float uStepTint;
 
 const int   MB_ITERS  = 20;
 
@@ -25,7 +28,7 @@ float mandelbulbDE(vec3 p)
 {
     float MB_POWER = min(iTime/10.0, 10.0);
 
-    vec3 z = p;
+    vec3 z = (uMode == 3) ? sin(p) : p;
     float dr = 1.0;
     float r  = 0.0;
 
@@ -52,11 +55,19 @@ float mandelbulbDE(vec3 p)
     return 0.5 * log(r) * r / dr;
 }
 
-float mapScene(vec3 p) { return mandelbulbDE(p); }
+float mapScene(vec3 p)
+{
+    if (uMode == 2)
+    {
+        return mandelbulbDE(sin(p));
+    }
+
+    return mandelbulbDE(p);
+}
 
 vec3 calcNormal(vec3 p)
 {
-    vec2 e = vec2(EPS, 0.0);
+    vec2 e = vec2(uEps, 0.0);
     float d = mapScene(p);
     vec3 n = vec3(
         mapScene(p + vec3(e.x, e.y, e.y)) - d,
@@ -108,14 +119,14 @@ bool raymarch(vec3 ro, vec3 rd, out float t, out vec3 pHit, out int stepsUsed)
         vec3 p = ro + rd * t;
         float d = mapScene(p);
 
-        if (d < MIN_HIT)
+        if (d < uMinHit)
         {
             pHit = p;
             return true;
         }
 
         t += d;
-        if (t > MAX_DIST) break;
+        if (t > uMaxDist) break;
     }
 
     pHit = ro + rd * t;
@@ -187,17 +198,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         col += 0.18 * rim * base;
 
         col = mix(col, vec3(0.02, 0.03, 0.05), 1.0 - exp(-0.05 * t));
-        col += 0.05 * glow;
+        col += 0.05 * glow * uGlowStrength;
 
         // Map/tint final color by raymarch steps
-        col = mix(col, stepCol, exp(-0.25/s));
+        float tintMix = clamp(uStepTint * exp(-0.25 / max(s, 1e-4)), 0.0, 1.0);
+        col = mix(col, stepCol, tintMix);
     }
     else
     {
         // Optional: background also shows step heat
-        col = mix(col, exp(-stepCol), 1.0);
+        col = mix(col, exp(-stepCol), clamp(uStepTint, 0.0, 1.0));
     }
 
     fragColor = vec4(col, 1.0);
 }
-

@@ -3,11 +3,41 @@
 
   const canvas = document.getElementById("glCanvas");
   const helpButton = document.getElementById("helpButton");
+  const settingsButton = document.getElementById("settingsButton");
   const closeHelpButton = document.getElementById("closeHelpButton");
+  const closeSettingsButton = document.getElementById("closeSettingsButton");
   const helpDialog = document.getElementById("helpDialog");
+  const settingsDialog = document.getElementById("settingsDialog");
+  const minHitSlider = document.getElementById("minHitSlider");
+  const minHitValueEl = document.getElementById("minHitValue");
+  const modeSelect = document.getElementById("modeSelect");
+  const maxDistSlider = document.getElementById("maxDistSlider");
+  const maxDistValueEl = document.getElementById("maxDistValue");
+  const glowSlider = document.getElementById("glowSlider");
+  const glowValueEl = document.getElementById("glowValue");
+  const stepTintSlider = document.getElementById("stepTintSlider");
+  const stepTintValueEl = document.getElementById("stepTintValue");
   const errorBanner = document.getElementById("errorBanner");
 
-  if (!canvas || !helpButton || !closeHelpButton || !helpDialog || !errorBanner) {
+  if (
+    !canvas ||
+    !helpButton ||
+    !settingsButton ||
+    !closeHelpButton ||
+    !closeSettingsButton ||
+    !helpDialog ||
+    !settingsDialog ||
+    !minHitSlider ||
+    !minHitValueEl ||
+    !modeSelect ||
+    !maxDistSlider ||
+    !maxDistValueEl ||
+    !glowSlider ||
+    !glowValueEl ||
+    !stepTintSlider ||
+    !stepTintValueEl ||
+    !errorBanner
+  ) {
     return;
   }
 
@@ -47,6 +77,13 @@ void main() {
 
   const keyState = new Uint8Array(KEYBOARD_TEX_WIDTH);
   let helpOpen = false;
+  let settingsOpen = false;
+  let minHitExponent = -4.0;
+  let minHitValue = Math.pow(10, minHitExponent);
+  let modeValue = 1;
+  let maxDistValue = 30.0;
+  let glowStrengthValue = 1.0;
+  let stepTintValue = 1.0;
 
   function showError(message, detail) {
     if (detail) {
@@ -72,6 +109,8 @@ void main() {
   }
 
   function openHelp() {
+    settingsOpen = false;
+    settingsDialog.hidden = true;
     helpOpen = true;
     clearKeys();
     helpDialog.hidden = false;
@@ -85,18 +124,132 @@ void main() {
     helpButton.focus();
   }
 
+  function openSettings() {
+    helpOpen = false;
+    helpDialog.hidden = true;
+    settingsOpen = true;
+    clearKeys();
+    settingsDialog.hidden = false;
+    minHitSlider.focus();
+  }
+
+  function closeSettings() {
+    settingsOpen = false;
+    clearKeys();
+    settingsDialog.hidden = true;
+    settingsButton.focus();
+  }
+
+  function modalIsOpen() {
+    return helpOpen || settingsOpen;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function formatScientific(value, digits) {
+    return value.toExponential(digits);
+  }
+
+  function updateMinHitFromSlider() {
+    const parsed = Number(minHitSlider.value);
+    if (!Number.isFinite(parsed)) {
+      minHitSlider.value = String(minHitExponent);
+      minHitValueEl.textContent = formatScientific(minHitValue, 2);
+      return;
+    }
+
+    minHitExponent = clamp(parsed, -6.0, -2.0);
+    minHitValue = Math.pow(10, minHitExponent);
+    minHitValueEl.textContent = formatScientific(minHitValue, 2);
+  }
+
+  function updateMaxDistFromSlider() {
+    const parsed = Number(maxDistSlider.value);
+    if (!Number.isFinite(parsed)) {
+      maxDistSlider.value = String(maxDistValue);
+      maxDistValueEl.textContent = maxDistValue.toFixed(1);
+      return;
+    }
+
+    maxDistValue = clamp(parsed, 8.0, 80.0);
+    maxDistValueEl.textContent = maxDistValue.toFixed(1);
+  }
+
+  function updateGlowFromSlider() {
+    const parsed = Number(glowSlider.value);
+    if (!Number.isFinite(parsed)) {
+      glowSlider.value = String(glowStrengthValue);
+      glowValueEl.textContent = glowStrengthValue.toFixed(2);
+      return;
+    }
+
+    glowStrengthValue = clamp(parsed, 0.0, 2.0);
+    glowValueEl.textContent = glowStrengthValue.toFixed(2);
+  }
+
+  function updateStepTintFromSlider() {
+    const parsed = Number(stepTintSlider.value);
+    if (!Number.isFinite(parsed)) {
+      stepTintSlider.value = String(stepTintValue);
+      stepTintValueEl.textContent = stepTintValue.toFixed(2);
+      return;
+    }
+
+    stepTintValue = clamp(parsed, 0.0, 1.0);
+    stepTintValueEl.textContent = stepTintValue.toFixed(2);
+  }
+
+  function updateModeFromInput() {
+    const parsed = Number(modeSelect.value);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
+      modeValue = 1;
+      modeSelect.value = "1";
+      return;
+    }
+    modeValue = parsed;
+  }
+
   helpButton.addEventListener("click", openHelp);
+  settingsButton.addEventListener("click", openSettings);
   closeHelpButton.addEventListener("click", closeHelp);
+  closeSettingsButton.addEventListener("click", closeSettings);
   helpDialog.addEventListener("click", function onHelpBackdropClick(event) {
     if (event.target === helpDialog) {
       closeHelp();
     }
   });
+  settingsDialog.addEventListener("click", function onSettingsBackdropClick(event) {
+    if (event.target === settingsDialog) {
+      closeSettings();
+    }
+  });
+
+  minHitSlider.addEventListener("input", updateMinHitFromSlider);
+  minHitSlider.addEventListener("change", updateMinHitFromSlider);
+  modeSelect.addEventListener("change", updateModeFromInput);
+  maxDistSlider.addEventListener("input", updateMaxDistFromSlider);
+  maxDistSlider.addEventListener("change", updateMaxDistFromSlider);
+  glowSlider.addEventListener("input", updateGlowFromSlider);
+  glowSlider.addEventListener("change", updateGlowFromSlider);
+  stepTintSlider.addEventListener("input", updateStepTintFromSlider);
+  stepTintSlider.addEventListener("change", updateStepTintFromSlider);
+
+  updateMinHitFromSlider();
+  updateModeFromInput();
+  updateMaxDistFromSlider();
+  updateGlowFromSlider();
+  updateStepTintFromSlider();
 
   window.addEventListener("keydown", function onKeyDown(event) {
-    if (event.key === "Escape" && helpOpen) {
+    if (event.key === "Escape" && modalIsOpen()) {
       event.preventDefault();
-      closeHelp();
+      if (settingsOpen) {
+        closeSettings();
+      } else {
+        closeHelp();
+      }
       return;
     }
 
@@ -105,7 +258,7 @@ void main() {
       event.preventDefault();
     }
 
-    if (helpOpen) {
+    if (modalIsOpen()) {
       return;
     }
 
@@ -289,6 +442,12 @@ void main() {
       iTime: gl.getUniformLocation(program, "iTime"),
       iTimeDelta: gl.getUniformLocation(program, "iTimeDelta"),
       iFrame: gl.getUniformLocation(program, "iFrame"),
+      uMinHit: gl.getUniformLocation(program, "uMinHit"),
+      uEps: gl.getUniformLocation(program, "uEps"),
+      uMode: gl.getUniformLocation(program, "uMode"),
+      uMaxDist: gl.getUniformLocation(program, "uMaxDist"),
+      uGlowStrength: gl.getUniformLocation(program, "uGlowStrength"),
+      uStepTint: gl.getUniformLocation(program, "uStepTint"),
       channels: channels,
     };
   }
@@ -305,6 +464,24 @@ void main() {
     }
     if (bundle.iFrame !== null) {
       gl.uniform1i(bundle.iFrame, frame);
+    }
+    if (bundle.uMinHit !== null) {
+      gl.uniform1f(bundle.uMinHit, minHitValue);
+    }
+    if (bundle.uEps !== null) {
+      gl.uniform1f(bundle.uEps, minHitValue * 5.0);
+    }
+    if (bundle.uMode !== null) {
+      gl.uniform1i(bundle.uMode, modeValue);
+    }
+    if (bundle.uMaxDist !== null) {
+      gl.uniform1f(bundle.uMaxDist, maxDistValue);
+    }
+    if (bundle.uGlowStrength !== null) {
+      gl.uniform1f(bundle.uGlowStrength, glowStrengthValue);
+    }
+    if (bundle.uStepTint !== null) {
+      gl.uniform1f(bundle.uStepTint, stepTintValue);
     }
   }
 
