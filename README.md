@@ -27,13 +27,83 @@ npm install
 npm test
 ```
 
-3. Serve the folder (example):
+3. Start the app server (required for checkout APIs):
+
+```bash
+npm start
+```
+
+4. Open:
+
+```text
+http://localhost:3000
+```
+
+## Monetization (Hybrid)
+
+This project includes a one-time premium unlock plus non-intrusive ads.
+
+- Free users: watermark on screenshot export + small bottom ad slot.
+- Premium users: no watermark, premium screenshot presets, ads hidden.
+- Payment flow: Stripe Checkout with server-side verification and signed unlock token.
+
+### Environment setup
+
+Copy `.env.example` to `.env`, then set real keys.
+
+```bash
+cp .env.example .env
+```
+
+`server.js` loads `.env` automatically at startup, so `npm start` is enough once variables are set.
+
+### Deploying on Vercel
+
+This repo is Vercel-ready using `api/*.js` serverless functions.
+
+1. Import the repository into Vercel.
+2. Set environment variables in Vercel Project Settings.
+3. For **Preview** environment, use Stripe **test** keys and test price.
+4. For **Production** environment, use Stripe **live** keys and live price.
+5. Add Stripe webhook endpoints:
+   - Preview: `https://<preview-domain>/api/stripe-webhook`
+   - Production: `https://<your-domain>/api/stripe-webhook`
+
+Recommended Vercel env separation:
+
+- Preview:
+  - `STRIPE_SECRET_KEY=sk_test_...`
+  - `STRIPE_WEBHOOK_SECRET=whsec_...` (from preview endpoint)
+  - `STRIPE_PRICE_ID=price_...` (test mode)
+- Production:
+  - `STRIPE_SECRET_KEY=sk_live_...`
+  - `STRIPE_WEBHOOK_SECRET=whsec_...` (live endpoint)
+  - `STRIPE_PRICE_ID=price_...` (live mode)
+
+### Security controls in server
+
+- Helmet security headers + CSP
+- Stripe webhook signature verification
+- Signed unlock tokens (`HS256`)
+- Simple API rate limiting
+- Strict same-origin API usage
+
+### Security controls in Vercel API mode
+
+- Shared request guards in `lib/http.js` (method + rate limit + body limits)
+- Stripe signature verification in `api/stripe-webhook.js`
+- Signed unlock JWT generation and validation via `lib/monetization.js`
+- CSP and baseline response security headers in `vercel.json`
+
+## Alternative static serving (render-only)
+
+If you only want local rendering without checkout APIs, a static server still works:
 
 ```bash
 python3 -m http.server
 ```
 
-4. Open:
+Open:
 
 ```text
 http://localhost:8000

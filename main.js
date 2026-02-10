@@ -11,10 +11,16 @@
   const settingsButton = document.getElementById("settingsButton");
   const closeHelpButton = document.getElementById("closeHelpButton");
   const closeSettingsButton = document.getElementById("closeSettingsButton");
+  const closePaywallButton = document.getElementById("closePaywallButton");
   const helpDialog = document.getElementById("helpDialog");
   const helpDesktopContent = document.getElementById("helpDesktopContent");
   const helpMobileContent = document.getElementById("helpMobileContent");
   const settingsDialog = document.getElementById("settingsDialog");
+  const paywallDialog = document.getElementById("paywallDialog");
+  const checkoutPremiumButton = document.getElementById("checkoutPremiumButton");
+  const unlockPremiumButton = document.getElementById("unlockPremiumButton");
+  const premiumStatusText = document.getElementById("premiumStatusText");
+  const premiumPresetSelect = document.getElementById("premiumPresetSelect");
   const mobileControls = document.getElementById("mobileControls");
   const mobileFovControl = document.getElementById("mobileFovControl");
   const mobileFovSlider = document.getElementById("mobileFovSlider");
@@ -29,6 +35,8 @@
   const glowValueEl = document.getElementById("glowValue");
   const stepTintSlider = document.getElementById("stepTintSlider");
   const stepTintValueEl = document.getElementById("stepTintValue");
+  const adContainer = document.getElementById("adContainer");
+  const adSlot = document.getElementById("adSlot");
   const mobileKeyButtons = Array.from(document.querySelectorAll("[data-touch-keycode]"));
   const errorBanner = document.getElementById("errorBanner");
 
@@ -43,10 +51,16 @@
     !settingsButton ||
     !closeHelpButton ||
     !closeSettingsButton ||
+    !closePaywallButton ||
     !helpDialog ||
     !helpDesktopContent ||
     !helpMobileContent ||
     !settingsDialog ||
+    !paywallDialog ||
+    !checkoutPremiumButton ||
+    !unlockPremiumButton ||
+    !premiumStatusText ||
+    !premiumPresetSelect ||
     !mobileControls ||
     !mobileFovControl ||
     !mobileFovSlider ||
@@ -61,6 +75,8 @@
     !glowValueEl ||
     !stepTintSlider ||
     !stepTintValueEl ||
+    !adContainer ||
+    !adSlot ||
     mobileKeyButtons.length === 0 ||
     !errorBanner
   ) {
@@ -98,6 +114,21 @@ void main() {
   const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
+  const PREMIUM_UNLOCK_TOKEN_KEY = "mandelbulb_premium_unlock_token";
+  const PREMIUM_PRESET_KEY = "mandelbulb_premium_preset";
+  const CHECKOUT_SUCCESS_KEY = "checkout";
+  const CHECKOUT_SESSION_ID_KEY = "session_id";
+  const PREMIUM_PROFILES = {
+    balanced: {
+      desktop: { minHit: 7e-6, maxDist: 220.0, maxSteps: 520, mbIters: 20 },
+      mobile: { minHit: 2e-5, maxDist: 120.0, maxSteps: 320, mbIters: 14 },
+    },
+    ultra: {
+      desktop: { minHit: 1e-6, maxDist: 1000.0, maxSteps: 1000, mbIters: 24 },
+      mobile: { minHit: 1.2e-5, maxDist: 240.0, maxSteps: 420, mbIters: 16 },
+    },
+  };
+  const WATERMARK_TEXT = "3dfractal.xyz";
   const MOBILE_DEFAULTS = {
     minHitExponent: -2.4,
     maxDist: 10.0,
@@ -151,6 +182,18 @@ void main() {
   let turnHintDismissed = false;
   let helpPointerTimerId = null;
   let screenshotInProgress = false;
+  let paywallOpen = false;
+  let isPremiumUnlocked = false;
+  let unlockToken = "";
+  let publicConfig = {
+    paymentsEnabled: false,
+    adsEnabled: false,
+    adsenseClientId: "",
+    adsenseSlotId: "",
+    priceLabel: "$3.99",
+  };
+  let adsScriptLoaded = false;
+  let adsInitialized = false;
 
   function showError(message, detail) {
     if (detail) {
@@ -186,6 +229,212 @@ void main() {
     return {
       width: Math.max(1, canvas.width),
       height: Math.max(1, canvas.height),
+    };
+  }
+
+  function getSelectedPremiumPreset() {
+    const value = premiumPresetSelect.value;
+    if (value === "ultra") {
+      return "ultra";
+    }
+    return "balanced";
+  }
+
+  function openPaywall() {
+    if (!publicConfig.paymentsEnabled) {
+      return;
+    }
+
+    helpOpen = false;
+    settingsOpen = false;
+    helpDialog.hidden = true;
+    settingsDialog.hidden = true;
+    paywallOpen = true;
+    clearKeys();
+    checkoutPremiumButton.disabled = false;
+    checkoutPremiumButton.textContent = "Unlock for " + publicConfig.priceLabel;
+    paywallDialog.hidden = false;
+    checkoutPremiumButton.focus();
+  }
+
+  function closePaywall() {
+    paywallOpen = false;
+    clearKeys();
+    paywallDialog.hidden = true;
+    unlockPremiumButton.focus();
+  }
+
+  function isAnyModalOpen() {
+    return helpOpen || settingsOpen || paywallOpen;
+  }
+
+  function setPremiumUnlocked(unlocked) {
+    isPremiumUnlocked = !!unlocked;
+    premiumPresetSelect.disabled = !isPremiumUnlocked;
+
+    if (isPremiumUnlocked) {
+      paywallOpen = false;
+      paywallDialog.hidden = true;
+      premiumStatusText.textContent = "Premium export unlocked. No watermark and ads removed.";
+      unlockPremiumButton.textContent = "Premium Unlocked";
+      unlockPremiumButton.disabled = true;
+      adContainer.hidden = true;
+    } else {
+      premiumStatusText.textContent = "Premium export is locked.";
+      unlockPremiumButton.textContent = "Unlock Premium Export";
+      unlockPremiumButton.disabled = false;
+      updateAdVisibility();
+    }
+  }
+
+  function getCurrentPathWithHash() {
+    return window.location.pathname + window.location.hash;
+  }
+
+  async function postJson(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      credentials: "same-origin",
+    });
+
+    const payload = await response.json().catch(function parseError() {
+      return {};
+    });
+
+    if (!response.ok) {
+      const message = payload && payload.error ? payload.error : "Request failed.";
+      throw new Error(message);
+    }
+
+    return payload;
+  }
+
+  function removeCheckoutParamsFromUrl() {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete(CHECKOUT_SUCCESS_KEY);
+    currentUrl.searchParams.delete(CHECKOUT_SESSION_ID_KEY);
+    window.history.replaceState({}, "", currentUrl.toString());
+  }
+
+  async function loadPublicConfig() {
+    try {
+      const response = await fetch("/api/public-config", { credentials: "same-origin" });
+      if (!response.ok) {
+        return;
+      }
+      const payload = await response.json();
+      publicConfig = Object.assign(publicConfig, payload);
+    } catch (_error) {
+      // Keep safe defaults when API is unavailable.
+    }
+  }
+
+  async function validateStoredUnlockToken() {
+    const storedToken = localStorage.getItem(PREMIUM_UNLOCK_TOKEN_KEY);
+    if (!storedToken) {
+      setPremiumUnlocked(false);
+      return;
+    }
+
+    try {
+      const payload = await postJson("/api/validate-unlock", { token: storedToken });
+      if (payload && payload.valid) {
+        unlockToken = storedToken;
+        setPremiumUnlocked(true);
+        return;
+      }
+    } catch (_error) {
+      // Ignore and fallback to locked mode.
+    }
+
+    localStorage.removeItem(PREMIUM_UNLOCK_TOKEN_KEY);
+    unlockToken = "";
+    setPremiumUnlocked(false);
+  }
+
+  async function tryCompleteCheckoutFromUrl() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(CHECKOUT_SUCCESS_KEY) !== "success") {
+      return;
+    }
+
+    const sessionId = url.searchParams.get(CHECKOUT_SESSION_ID_KEY);
+    if (!sessionId) {
+      removeCheckoutParamsFromUrl();
+      return;
+    }
+
+    try {
+      const payload = await postJson("/api/verify-unlock", { sessionId: sessionId });
+      if (payload && payload.unlocked && typeof payload.token === "string") {
+        unlockToken = payload.token;
+        localStorage.setItem(PREMIUM_UNLOCK_TOKEN_KEY, payload.token);
+        setPremiumUnlocked(true);
+      }
+    } catch (error) {
+      showError("Could not complete premium unlock after checkout.", error);
+    } finally {
+      removeCheckoutParamsFromUrl();
+    }
+  }
+
+  function markInteractionForAds() {
+    if (!publicConfig.adsEnabled || isPremiumUnlocked || adsScriptLoaded) {
+      return;
+    }
+
+    if (!publicConfig.adsenseClientId || !publicConfig.adsenseSlotId) {
+      return;
+    }
+
+    adsScriptLoaded = true;
+    const script = document.createElement("script");
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(publicConfig.adsenseClientId);
+    script.onload = function onAdsLoad() {
+      if (isPremiumUnlocked || !publicConfig.adsEnabled) {
+        return;
+      }
+      adSlot.setAttribute("data-ad-client", publicConfig.adsenseClientId);
+      adSlot.setAttribute("data-ad-slot", publicConfig.adsenseSlotId);
+      adSlot.setAttribute("data-ad-format", "horizontal");
+      adSlot.setAttribute("data-full-width-responsive", "true");
+      adContainer.hidden = false;
+      if (!adsInitialized) {
+        adsInitialized = true;
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adsbygoogle.push({});
+      }
+    };
+    document.head.appendChild(script);
+  }
+
+  function updateAdVisibility() {
+    if (isPremiumUnlocked || !publicConfig.adsEnabled) {
+      adContainer.hidden = true;
+      return;
+    }
+
+    if (adsScriptLoaded && adsInitialized) {
+      adContainer.hidden = false;
+    }
+  }
+
+  function getPremiumScreenshotProfile() {
+    const preset = getSelectedPremiumPreset();
+    const deviceProfile = isMobileClient ? PREMIUM_PROFILES[preset].mobile : PREMIUM_PROFILES[preset].desktop;
+    return {
+      uMinHit: deviceProfile.minHit,
+      uEps: deviceProfile.minHit * 5.0,
+      uMaxDist: deviceProfile.maxDist,
+      uMaxSteps: deviceProfile.maxSteps,
+      uMbIters: deviceProfile.mbIters,
+      uLowPowerMode: 0,
     };
   }
 
@@ -322,7 +571,7 @@ void main() {
       }
 
       button.addEventListener("pointerdown", function onPointerDown(event) {
-        if (!isMobileClient || modalIsOpen()) {
+        if (!isMobileClient || isAnyModalOpen()) {
           return;
         }
 
@@ -354,6 +603,8 @@ void main() {
 
   function openHelp() {
     dismissHelpPointerHint(true);
+    paywallOpen = false;
+    paywallDialog.hidden = true;
     settingsOpen = false;
     settingsDialog.hidden = true;
     helpOpen = true;
@@ -372,6 +623,8 @@ void main() {
   function openSettings() {
     helpOpen = false;
     helpDialog.hidden = true;
+    paywallOpen = false;
+    paywallDialog.hidden = true;
     settingsOpen = true;
     clearKeys();
     settingsDialog.hidden = false;
@@ -383,10 +636,6 @@ void main() {
     clearKeys();
     settingsDialog.hidden = true;
     settingsButton.focus();
-  }
-
-  function modalIsOpen() {
-    return helpOpen || settingsOpen;
   }
 
   function fadeOutAndHideHint(element, done) {
@@ -559,13 +808,25 @@ void main() {
   applyMobileProfile();
   bindMobileControls();
 
+  const storedPreset = localStorage.getItem(PREMIUM_PRESET_KEY);
+  if (storedPreset === "ultra" || storedPreset === "balanced") {
+    premiumPresetSelect.value = storedPreset;
+  }
+
   helpButton.addEventListener("click", openHelp);
   document.addEventListener("contextmenu", suppressLongPressUi);
   document.addEventListener("selectstart", suppressLongPressUi);
   document.addEventListener("dragstart", suppressLongPressUi);
+  document.addEventListener("pointerdown", markInteractionForAds, { once: true });
+  document.addEventListener("keydown", markInteractionForAds, { once: true });
   settingsButton.addEventListener("click", openSettings);
   closeHelpButton.addEventListener("click", closeHelp);
   closeSettingsButton.addEventListener("click", closeSettings);
+  closePaywallButton.addEventListener("click", closePaywall);
+  unlockPremiumButton.addEventListener("click", openPaywall);
+  checkoutPremiumButton.addEventListener("click", function onCheckoutClick() {
+    startCheckoutFlow();
+  });
   helpDialog.addEventListener("click", function onHelpBackdropClick(event) {
     if (event.target === helpDialog) {
       closeHelp();
@@ -574,6 +835,11 @@ void main() {
   settingsDialog.addEventListener("click", function onSettingsBackdropClick(event) {
     if (event.target === settingsDialog) {
       closeSettings();
+    }
+  });
+  paywallDialog.addEventListener("click", function onPaywallBackdropClick(event) {
+    if (event.target === paywallDialog) {
+      closePaywall();
     }
   });
 
@@ -588,6 +854,9 @@ void main() {
   glowSlider.addEventListener("change", updateGlowFromSlider);
   stepTintSlider.addEventListener("input", updateStepTintFromSlider);
   stepTintSlider.addEventListener("change", updateStepTintFromSlider);
+  premiumPresetSelect.addEventListener("change", function onPresetChange() {
+    localStorage.setItem(PREMIUM_PRESET_KEY, getSelectedPremiumPreset());
+  });
 
   updateMinHitFromSlider();
   updateModeFromInput();
@@ -595,11 +864,17 @@ void main() {
   updateMaxDistFromSlider();
   updateGlowFromSlider();
   updateStepTintFromSlider();
+  setPremiumUnlocked(false);
+  initializeMonetization().catch(function onInitMonetizationError(error) {
+    showError("Monetization initialization failed.", error);
+  });
 
   window.addEventListener("keydown", function onKeyDown(event) {
-    if (event.key === "Escape" && modalIsOpen()) {
+    if (event.key === "Escape" && isAnyModalOpen()) {
       event.preventDefault();
-      if (settingsOpen) {
+      if (paywallOpen) {
+        closePaywall();
+      } else if (settingsOpen) {
         closeSettings();
       } else {
         closeHelp();
@@ -612,7 +887,7 @@ void main() {
       event.preventDefault();
     }
 
-    if (modalIsOpen()) {
+    if (isAnyModalOpen()) {
       return;
     }
 
@@ -898,6 +1173,50 @@ void main() {
     return response.text();
   }
 
+  async function startCheckoutFlow() {
+    if (!publicConfig.paymentsEnabled) {
+      showError("Checkout is not configured on this deployment.");
+      return;
+    }
+
+    checkoutPremiumButton.disabled = true;
+    checkoutPremiumButton.textContent = "Redirecting...";
+
+    try {
+      const payload = await postJson("/api/create-checkout-session", {
+        successPath: getCurrentPathWithHash(),
+        cancelPath: getCurrentPathWithHash(),
+      });
+
+      if (!payload || typeof payload.url !== "string") {
+        throw new Error("Checkout response missing redirect URL.");
+      }
+
+      window.location.href = payload.url;
+    } catch (error) {
+      showError("Could not start checkout.", error);
+      checkoutPremiumButton.disabled = false;
+      checkoutPremiumButton.textContent = "Unlock Now";
+    }
+  }
+
+  async function initializeMonetization() {
+    await loadPublicConfig();
+    await validateStoredUnlockToken();
+    await tryCompleteCheckoutFromUrl();
+
+    if (!publicConfig.paymentsEnabled) {
+      unlockPremiumButton.disabled = true;
+      unlockPremiumButton.textContent = "Checkout unavailable";
+      premiumStatusText.textContent = "Premium checkout is not configured for this deployment.";
+      paywallDialog.hidden = true;
+    } else {
+      checkoutPremiumButton.textContent = "Unlock for " + publicConfig.priceLabel;
+    }
+
+    updateAdVisibility();
+  }
+
   function buildScreenshotFileName() {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     return "mandelbulb-" + stamp + ".png";
@@ -1040,25 +1359,27 @@ void main() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
 
         const dims = getScreenshotDimensions();
+        const premiumProfile = isPremiumUnlocked ? getPremiumScreenshotProfile() : null;
         const screenshotPayload = {
           width: dims.width,
           height: dims.height,
           fileName: buildScreenshotFileName(),
           mainImageSource: rawMainImage,
           stateBuffer: statePixels.buffer,
+          watermarkText: isPremiumUnlocked ? "" : WATERMARK_TEXT,
           uniforms: {
             iTime: currentTimeSec,
             iTimeDelta: 1.0 / 60.0,
             iFrame: frame,
-            uMinHit: minHitValue,
-            uEps: minHitValue * 5.0,
+            uMinHit: premiumProfile ? premiumProfile.uMinHit : minHitValue,
+            uEps: premiumProfile ? premiumProfile.uEps : minHitValue * 5.0,
             uMode: modeValue,
-            uMaxDist: maxDistValue,
+            uMaxDist: premiumProfile ? premiumProfile.uMaxDist : maxDistValue,
             uGlowStrength: glowStrengthValue,
             uStepTint: stepTintValue,
-            uMaxSteps: maxStepsValue,
-            uMbIters: mbItersValue,
-            uLowPowerMode: lowPowerModeValue,
+            uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue,
+            uMbIters: premiumProfile ? premiumProfile.uMbIters : mbItersValue,
+            uLowPowerMode: premiumProfile ? premiumProfile.uLowPowerMode : lowPowerModeValue,
             uFovOverride: fovOverrideValue,
           },
         };

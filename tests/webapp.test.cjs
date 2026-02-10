@@ -17,6 +17,17 @@ describe("Mandelbulb web app smoke suite", () => {
       "bufferA.glsl",
       "mainImage.glsl",
       "screenshot-worker.js",
+      "server.js",
+      "vercel.json",
+      "api/public-config.js",
+      "api/create-checkout-session.js",
+      "api/verify-unlock.js",
+      "api/validate-unlock.js",
+      "api/stripe-webhook.js",
+      "lib/monetization.js",
+      "lib/http.js",
+      ".env.example",
+      "README.md",
       "package.json",
       "jest.config.cjs",
     ];
@@ -55,6 +66,12 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/id=["']settingsButton["']/i);
     expect(html).toMatch(/id=["']helpDialog["']/i);
     expect(html).toMatch(/id=["']settingsDialog["']/i);
+    expect(html).toMatch(/id=["']paywallDialog["']/i);
+    expect(html).toMatch(/id=["']unlockPremiumButton["']/i);
+    expect(html).toMatch(/id=["']checkoutPremiumButton["']/i);
+    expect(html).toMatch(/id=["']premiumPresetSelect["']/i);
+    expect(html).toMatch(/id=["']adContainer["']/i);
+    expect(html).toMatch(/id=["']adSlot["']/i);
     expect(html).toMatch(/id=["']minHitSlider["']/i);
     expect(html).toMatch(/id=["']minHitValue["']/i);
     expect(html).toMatch(/id=["']modeSelect["']/i);
@@ -84,7 +101,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(() => new vm.Script(source, { filename: "main.js" })).not.toThrow();
   });
 
-  test("main.js wires Shadertoy-like two-pass pipeline", () => {
+  test("main.js wires rendering, monetization, and ads flow", () => {
     const source = readProjectFile("main.js");
 
     expect(source).toContain("EXT_color_buffer_float");
@@ -95,11 +112,16 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("KEYBOARD_TEX_WIDTH");
     expect(source).toContain("screenshot-worker.js");
     expect(source).toContain("getScreenshotDimensions");
-    expect(source).toContain("uMaxSteps: maxStepsValue");
-    expect(source).toContain("uMaxDist: maxDistValue");
-    expect(source).toContain("uMinHit: minHitValue");
+    expect(source).toContain("uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue");
+    expect(source).toContain("uMaxDist: premiumProfile ? premiumProfile.uMaxDist : maxDistValue");
+    expect(source).toContain("uMinHit: premiumProfile ? premiumProfile.uMinHit : minHitValue");
     expect(source).toContain("detectMobileClient");
     expect(source).toContain("devicePixelRatioCap");
+    expect(source).toContain("PREMIUM_UNLOCK_TOKEN_KEY");
+    expect(source).toContain("startCheckoutFlow");
+    expect(source).toContain("initializeMonetization");
+    expect(source).toContain("markInteractionForAds");
+    expect(source).toContain("WATERMARK_TEXT");
   });
 
   test("screenshot worker file is wired for hi-res rendering", () => {
@@ -111,6 +133,46 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(workerSource).toContain("uMaxDist");
     expect(workerSource).toContain("uMinHit");
     expect(workerSource).toContain("self.onmessage");
+    expect(workerSource).toContain("addWatermarkIfNeeded");
+    expect(workerSource).toContain("watermarkText");
+  });
+
+  test("server exposes secure monetization endpoints", () => {
+    const serverSource = readProjectFile("server.js");
+
+    expect(serverSource).toContain("require(\"dotenv\").config");
+    expect(serverSource).toContain("helmet(");
+    expect(serverSource).toContain("contentSecurityPolicy");
+    expect(serverSource).toContain("rateLimit");
+    expect(serverSource).toContain("/api/create-checkout-session");
+    expect(serverSource).toContain("/api/verify-unlock");
+    expect(serverSource).toContain("/api/validate-unlock");
+    expect(serverSource).toContain("/api/stripe-webhook");
+    expect(serverSource).toContain("constructEvent");
+    expect(serverSource).toContain("jwt.sign");
+  });
+
+  test("vercel api routes are configured for monetization", () => {
+    const publicConfigApi = readProjectFile("api/public-config.js");
+    const createCheckoutApi = readProjectFile("api/create-checkout-session.js");
+    const verifyUnlockApi = readProjectFile("api/verify-unlock.js");
+    const validateUnlockApi = readProjectFile("api/validate-unlock.js");
+    const webhookApi = readProjectFile("api/stripe-webhook.js");
+    const monetizationLib = readProjectFile("lib/monetization.js");
+    const httpLib = readProjectFile("lib/http.js");
+    const vercelConfig = readProjectFile("vercel.json");
+
+    expect(publicConfigApi).toContain("getPublicConfig");
+    expect(createCheckoutApi).toContain("success_url");
+    expect(createCheckoutApi).toContain("stripe.checkout.sessions.create");
+    expect(verifyUnlockApi).toContain("stripe.checkout.sessions.retrieve");
+    expect(verifyUnlockApi).toContain("signUnlockToken");
+    expect(validateUnlockApi).toContain("verifyUnlockToken");
+    expect(webhookApi).toContain("constructEvent");
+    expect(webhookApi).toContain("stripe-signature");
+    expect(monetizationLib).toContain("VERCEL_ENV");
+    expect(httpLib).toContain("rateLimit");
+    expect(vercelConfig).toContain("Content-Security-Policy");
   });
 
   test("bufferA shader still contains expected movement key bindings", () => {

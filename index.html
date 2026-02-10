@@ -124,6 +124,38 @@
                     <output id="stepTintValue" class="setting-value">1.00</output>
                 </div>
             </label>
+
+            <div class="premium-block">
+                <p id="premiumStatusText" class="premium-status">Premium export is locked.</p>
+                <label class="setting-row" for="premiumPresetSelect">
+                    <span>Premium render preset</span>
+                    <select id="premiumPresetSelect" disabled>
+                        <option value="balanced">Balanced</option>
+                        <option value="ultra">Ultra</option>
+                    </select>
+                </label>
+                <button id="unlockPremiumButton" class="close-button" type="button" aria-label="Unlock premium export">
+                    Unlock Premium Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="paywallDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="paywallTitle" hidden>
+        <div class="help-card settings-card paywall-card">
+            <div class="help-header">
+                <h2 id="paywallTitle">Premium Export Unlock</h2>
+                <button id="closePaywallButton" class="close-button" type="button" aria-label="Close unlock dialog">Close</button>
+            </div>
+            <p>One-time unlock for clean high-quality renders.</p>
+            <ul>
+                <li><strong>No watermark</strong> on exported screenshots.</li>
+                <li><strong>High-quality presets</strong> for improved detail.</li>
+                <li><strong>Ads removed</strong> after unlock.</li>
+            </ul>
+            <button id="checkoutPremiumButton" class="overlay-button" type="button" aria-label="Go to checkout">
+                Unlock Now
+            </button>
         </div>
     </div>
 
@@ -165,6 +197,10 @@
             <path d="M9 4l-1.2 2H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.3L15 4H9zm3 4.5A5.5 5.5 0 1 1 6.5 14 5.5 5.5 0 0 1 12 8.5zm0 2A3.5 3.5 0 1 0 15.5 14 3.5 3.5 0 0 0 12 10.5z" />
         </svg>
     </button>
+
+    <div id="adContainer" class="ad-container" aria-label="Sponsor" hidden>
+        <ins id="adSlot" class="adsbygoogle"></ins>
+    </div>
 
     <div class="signature">Brendon Maia</div>
 

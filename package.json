@@ -4,9 +4,17 @@
   "private": true,
   "description": "Fullscreen Mandelbulb explorer with Shadertoy-style shader pipeline",
   "scripts": {
+    "start": "node server.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "check": "npm run test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^18.4.0"
   },
   "devDependencies": {
     "jest": "^29.7.0"

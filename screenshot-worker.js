@@ -117,6 +117,34 @@ function setUniform(gl, location, type, value) {
   }
 }
 
+async function addWatermarkIfNeeded(canvas, text) {
+  if (!text || typeof text !== "string" || text.trim() === "") {
+    return canvas;
+  }
+
+  const overlay = new OffscreenCanvas(canvas.width, canvas.height);
+  const ctx = overlay.getContext("2d");
+  if (!ctx) {
+    return canvas;
+  }
+
+  ctx.drawImage(canvas, 0, 0);
+
+  const margin = Math.max(12, Math.round(canvas.height * 0.018));
+  const fontSize = Math.max(16, Math.round(canvas.height * 0.03));
+  ctx.font = "600 " + fontSize + "px Trebuchet MS, Segoe UI, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const x = canvas.width * 0.5;
+  const y = canvas.height * 0.5;
+
+  ctx.fillStyle = "rgba(235, 248, 255, 0.5)";
+  ctx.fillText(text, x, y);
+
+  return overlay;
+}
+
 self.onmessage = async function onMessage(event) {
   try {
     const payload = event.data;
@@ -199,7 +227,8 @@ self.onmessage = async function onMessage(event) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.finish();
 
-    const blob = await canvas.convertToBlob({ type: "image/png" });
+    const outputCanvas = await addWatermarkIfNeeded(canvas, payload.watermarkText || "");
+    const blob = await outputCanvas.convertToBlob({ type: "image/png" });
     const blobBuffer = await blob.arrayBuffer();
 
     self.postMessage(
