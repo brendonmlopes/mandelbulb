@@ -5,15 +5,17 @@
 precision highp float;
 #endif
 
-const int   MAX_STEPS = 300;
+const int   MAX_STEPS_CAP = 320;
+const int   MB_ITERS_CAP  = 24;
 uniform float uMinHit;
 uniform float uEps;
 uniform int uMode;
 uniform float uMaxDist;
 uniform float uGlowStrength;
 uniform float uStepTint;
-
-const int   MB_ITERS  = 20;
+uniform int uMaxSteps;
+uniform int uMbIters;
+uniform int uLowPowerMode;
 
 mat3 makeCamera(vec3 ro, vec3 ta, float roll)
 {
@@ -32,8 +34,9 @@ float mandelbulbDE(vec3 p)
     float dr = 1.0;
     float r  = 0.0;
 
-    for (int i = 0; i < MB_ITERS; i++)
+    for (int i = 0; i < MB_ITERS_CAP; i++)
     {
+        if (i >= uMbIters) break;
         r = length(z);
         if (r > 4.0) break;
 
@@ -81,8 +84,9 @@ float softShadow(vec3 ro, vec3 rd, float tmin, float tmax)
 {
     float res = 1.0;
     float t = tmin;
-    for (int i = 0; i < 40; i++)
+    for (int i = 0; i < 24; i++)
     {
+        if (uLowPowerMode == 1 && i >= 12) break;
         float h = mapScene(ro + rd * t);
         if (h < 0.0008) return 0.0;
         res = min(res, 8.0 * h / t);
@@ -94,6 +98,11 @@ float softShadow(vec3 ro, vec3 rd, float tmin, float tmax)
 
 float ambientOcclusion(vec3 p, vec3 n)
 {
+    if (uLowPowerMode == 1)
+    {
+        return 1.0;
+    }
+
     float ao = 0.0;
     float sca = 1.0;
     for (int i = 0; i < 5; i++)
@@ -112,8 +121,9 @@ bool raymarch(vec3 ro, vec3 rd, out float t, out vec3 pHit, out int stepsUsed)
     t = 0.0;
     stepsUsed = 0;
 
-    for (int i = 0; i < MAX_STEPS; i++)
+    for (int i = 0; i < MAX_STEPS_CAP; i++)
     {
+        if (i >= uMaxSteps) break;
         stepsUsed = i + 1;
 
         vec3 p = ro + rd * t;
@@ -166,7 +176,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     bool hit = raymarch(ro, rd, t, pHit, stepsUsed);
 
     // Step-based color (0..1)
-    float s = float(stepsUsed) / float(MAX_STEPS);
+    float maxStepsF = max(float(uMaxSteps), 1.0);
+    float s = float(stepsUsed) / maxStepsF;
     vec3 stepCol = 0.5 + 0.5 * cos(6.2831853 * (vec3(0.0, 0.33, 0.67) + exp(-10.0*s)));
 
     vec3 col = vec3(0.02, 0.03, 0.9) + 0.02 * vec3(uv.y);
@@ -182,20 +193,25 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         vec3 hdir = normalize(ldir + vdir);
 
         float diff = max(dot(n, ldir), 0.0);
-        float spec = pow(max(dot(n, hdir), 0.0), 64.0);
+        float specPower = (uLowPowerMode == 1) ? 24.0 : 64.0;
+        float spec = pow(max(dot(n, hdir), 0.0), specPower);
 
-        float sh = softShadow(pHit + n * 0.002, ldir, 0.02, 12.0);
+        float sh = (uLowPowerMode == 1) ? 1.0 : softShadow(pHit + n * 0.002, ldir, 0.02, 12.0);
         float ao = ambientOcclusion(pHit, n);
 
         float glow = exp(-0.12 * t);
         vec3 base = 0.55 + 0.45 * cos(vec3(0.0, 1.0, 2.0) + 0.7 * pHit.xyz);
 
         col = base * (0.15 + 0.85 * diff * sh);
-        col += 0.35 * spec * sh;
+        float specScale = (uLowPowerMode == 1) ? 0.2 : 0.35;
+        col += specScale * spec * sh;
         col *= ao;
 
-        float rim = pow(1.0 - max(dot(n, vdir), 0.0), 2.0);
-        col += 0.18 * rim * base;
+        if (uLowPowerMode == 0)
+        {
+            float rim = pow(1.0 - max(dot(n, vdir), 0.0), 2.0);
+            col += 0.18 * rim * base;
+        }
 
         col = mix(col, vec3(0.02, 0.03, 0.05), 1.0 - exp(-0.05 * t));
         col += 0.05 * glow * uGlowStrength;

@@ -119,8 +119,13 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/uniform\s+float\s+uMaxDist\s*;/);
     expect(imageShader).toMatch(/uniform\s+float\s+uGlowStrength\s*;/);
     expect(imageShader).toMatch(/uniform\s+float\s+uStepTint\s*;/);
+    expect(imageShader).toMatch(/uniform\s+int\s+uMaxSteps\s*;/);
+    expect(imageShader).toMatch(/uniform\s+int\s+uMbIters\s*;/);
+    expect(imageShader).toMatch(/uniform\s+int\s+uLowPowerMode\s*;/);
     expect(imageShader).toMatch(/uMode\s*==\s*2/);
     expect(imageShader).toMatch(/uMode\s*==\s*3/);
+    expect(imageShader).toMatch(/i\s*>=\s*uMaxSteps/);
+    expect(imageShader).toMatch(/i\s*>=\s*uMbIters/);
     expect(imageShader).toMatch(/vec3\s+z\s*=\s*\(uMode\s*==\s*3\)\s*\?\s*sin\(p\)\s*:\s*p\s*;/);
     expect(imageShader).toMatch(/float\s+d\s*=\s*mapScene\(p\)\s*;/);
     expect(imageShader).toMatch(/t\s*>\s*uMaxDist/);
@@ -136,6 +141,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("uMaxDist");
     expect(source).toContain("uGlowStrength");
     expect(source).toContain("uStepTint");
+    expect(source).toContain("uMaxSteps");
+    expect(source).toContain("uMbIters");
+    expect(source).toContain("uLowPowerMode");
     expect(source).toContain("minHitValue * 5.0");
     expect(source).toContain("Math.pow(10");
     expect(source).toContain("settingsButton");
@@ -143,6 +151,8 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("MOVEMENT_HINT_KEYCODES");
     expect(source).toContain("TURN_HINT_KEYCODES");
     expect(source).toContain("MOBILE_DEFAULTS");
+    expect(source).toContain("renderScale");
+    expect(source).toContain("targetFps");
     expect(source).toContain("bindMobileControls");
     expect(source).toContain("setTouchKeyState");
     expect(source).toContain("HELP_POINTER_MS");

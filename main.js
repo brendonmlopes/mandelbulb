@@ -91,10 +91,14 @@ void main() {
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
   const MOBILE_DEFAULTS = {
-    minHitExponent: -2.6,
-    maxDist: 14.0,
-    glowStrength: 0.75,
-    stepTint: 0.75,
+    minHitExponent: -2.4,
+    maxDist: 10.0,
+    glowStrength: 0.6,
+    stepTint: 0.65,
+    maxSteps: 96,
+    mbIters: 10,
+    renderScale: 0.66,
+    targetFps: 30,
   };
 
   const keyCodeFallback = {
@@ -129,6 +133,11 @@ void main() {
   let maxDistValue = 30.0;
   let glowStrengthValue = 1.0;
   let stepTintValue = 1.0;
+  let maxStepsValue = 300;
+  let mbItersValue = 20;
+  let lowPowerModeValue = 0;
+  let renderScaleValue = 1.0;
+  let targetFrameDelta = 0.0;
   let movementHintDismissed = false;
   let turnHintDismissed = false;
   let helpPointerTimerId = null;
@@ -178,6 +187,11 @@ void main() {
       turnHintDismissed = false;
       movementHintTitle.textContent = "Use WASD to move";
       turnHintTitle.textContent = "Use Arrow Keys to turn";
+      maxStepsValue = 300;
+      mbItersValue = 20;
+      lowPowerModeValue = 0;
+      renderScaleValue = 1.0;
+      targetFrameDelta = 0.0;
       return;
     }
 
@@ -204,6 +218,11 @@ void main() {
     maxDistValue = MOBILE_DEFAULTS.maxDist;
     glowStrengthValue = MOBILE_DEFAULTS.glowStrength;
     stepTintValue = MOBILE_DEFAULTS.stepTint;
+    maxStepsValue = MOBILE_DEFAULTS.maxSteps;
+    mbItersValue = MOBILE_DEFAULTS.mbIters;
+    lowPowerModeValue = 1;
+    renderScaleValue = MOBILE_DEFAULTS.renderScale;
+    targetFrameDelta = 1.0 / MOBILE_DEFAULTS.targetFps;
 
     minHitSlider.value = String(minHitExponent);
     maxDistSlider.value = String(maxDistValue);
@@ -718,6 +737,9 @@ void main() {
       uMaxDist: gl.getUniformLocation(program, "uMaxDist"),
       uGlowStrength: gl.getUniformLocation(program, "uGlowStrength"),
       uStepTint: gl.getUniformLocation(program, "uStepTint"),
+      uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
+      uMbIters: gl.getUniformLocation(program, "uMbIters"),
+      uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
       channels: channels,
     };
   }
@@ -753,6 +775,15 @@ void main() {
     if (bundle.uStepTint !== null) {
       gl.uniform1f(bundle.uStepTint, stepTintValue);
     }
+    if (bundle.uMaxSteps !== null) {
+      gl.uniform1i(bundle.uMaxSteps, maxStepsValue);
+    }
+    if (bundle.uMbIters !== null) {
+      gl.uniform1i(bundle.uMbIters, mbItersValue);
+    }
+    if (bundle.uLowPowerMode !== null) {
+      gl.uniform1i(bundle.uLowPowerMode, lowPowerModeValue);
+    }
   }
 
   function bindTextureAt(gl, unit, texture, uniformLocation) {
@@ -765,8 +796,8 @@ void main() {
 
   function resizeCanvasToDisplaySize(glContext, canvasElement) {
     const dpr = Math.min(window.devicePixelRatio || 1, devicePixelRatioCap);
-    const width = Math.max(1, Math.floor(window.innerWidth * dpr));
-    const height = Math.max(1, Math.floor(window.innerHeight * dpr));
+    const width = Math.max(1, Math.floor(window.innerWidth * dpr * renderScaleValue));
+    const height = Math.max(1, Math.floor(window.innerHeight * dpr * renderScaleValue));
 
     if (canvasElement.width !== width || canvasElement.height !== height) {
       canvasElement.width = width;
@@ -872,11 +903,18 @@ void main() {
 
     let frame = 0;
     let lastTime = performance.now() * 0.001;
+    let lastPresentTime = lastTime;
 
     function render(nowMillis) {
       const now = nowMillis * 0.001;
+      if (targetFrameDelta > 0.0 && now - lastPresentTime < targetFrameDelta) {
+        requestAnimationFrame(render);
+        return;
+      }
+
       const delta = Math.max(1.0 / 240.0, Math.min(0.25, now - lastTime));
       lastTime = now;
+      lastPresentTime = now;
 
       resizeCanvasToDisplaySize(gl, canvas);
       updateKeyboardTexture(gl, keyboardTexture);
