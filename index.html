@@ -6,11 +6,25 @@
     <meta name="google-adsense-account" content="ca-pub-9229750660830893">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mandelbulb Explorer</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
     <canvas id="glCanvas" aria-label="Mandelbulb viewport"></canvas>
+
+    <div class="social-links" aria-label="Social links">
+        <a class="social-link" href="https://x.com/stack_overchill" target="_blank" rel="noopener noreferrer" aria-label="X profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-4.9-6.8L6 22H2.8l7.3-8.4L.8 2h6.4l4.4 6.2L18.9 2zm-1.1 18h1.8L6.2 3.9H4.3L17.8 20z"/>
+            </svg>
+        </a>
+        <a class="social-link" href="https://www.linkedin.com/in/brendon-maia-lopes-a696581a4/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6.9 8.3a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2zM5 9.8h3.7V21H5V9.8zm5.8 0h3.5v1.5h.1c.5-.9 1.7-1.8 3.5-1.8 3.7 0 4.4 2.4 4.4 5.6V21h-3.7v-5.1c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-3.7V9.8z"/>
+            </svg>
+        </a>
+    </div>
 
     <div id="movementHint" class="movement-hint" aria-label="Movement guide">
         <p id="movementHintTitle" class="movement-hint-title">Use WASD to move</p>

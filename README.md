@@ -46,6 +46,7 @@ This project includes a one-time premium unlock plus non-intrusive ads.
 - Free users: watermark on screenshot export + small bottom ad slot.
 - Premium users: no watermark, premium screenshot presets, ads hidden.
 - Payment flow: Stripe Checkout with server-side verification and signed unlock token.
+- Ads only appear after user interaction and are auto-hidden while dialogs or screenshot rendering are active.
 
 ### Environment setup
 

@@ -39,6 +39,46 @@ body {
   display: block;
 }
 
+.social-links {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+}
+
+.social-link {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(8, 25, 35, 0.88), rgba(15, 38, 51, 0.8));
+  color: var(--ui-text);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
+  transition: transform 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.social-link:hover {
+  transform: translateY(-1px);
+  border-color: var(--ui-accent);
+  color: #f5fdff;
+}
+
+.social-link:focus-visible {
+  outline: 2px solid var(--ui-accent-strong);
+  outline-offset: 2px;
+}
+
+.social-link svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
 .movement-hint {
   position: fixed;
   left: 50%;
@@ -607,6 +647,22 @@ body {
 }
 
 @media (max-width: 560px) {
+  .social-links {
+    top: 12px;
+    left: 12px;
+    gap: 8px;
+  }
+
+  .social-link {
+    width: 34px;
+    height: 34px;
+  }
+
+  .social-link svg {
+    width: 15px;
+    height: 15px;
+  }
+
   .movement-hint {
     gap: 10px;
   }
@@ -691,7 +747,7 @@ body {
   .ad-container {
     width: calc(100vw - 12px);
     min-height: 50px;
-    bottom: 4px;
+    bottom: 154px;
   }
 
   .overlay-controls {

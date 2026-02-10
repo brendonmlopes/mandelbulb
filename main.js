@@ -210,6 +210,7 @@ void main() {
       "aria-label",
       isBusy ? "Rendering screenshot" : "Capture screenshot"
     );
+    updateAdVisibility();
   }
 
   function downloadBlob(blob, fileName) {
@@ -255,6 +256,7 @@ void main() {
     checkoutPremiumButton.textContent = "Unlock for " + publicConfig.priceLabel;
     paywallDialog.hidden = false;
     checkoutPremiumButton.focus();
+    updateAdVisibility();
   }
 
   function closePaywall() {
@@ -262,6 +264,7 @@ void main() {
     clearKeys();
     paywallDialog.hidden = true;
     unlockPremiumButton.focus();
+    updateAdVisibility();
   }
 
   function isAnyModalOpen() {
@@ -285,6 +288,22 @@ void main() {
       unlockPremiumButton.disabled = false;
       updateAdVisibility();
     }
+  }
+
+  function shouldShowAdContainer() {
+    if (!publicConfig.adsEnabled) {
+      return false;
+    }
+    if (isPremiumUnlocked) {
+      return false;
+    }
+    if (!adsScriptLoaded || !adsInitialized) {
+      return false;
+    }
+    if (screenshotInProgress || isAnyModalOpen()) {
+      return false;
+    }
+    return true;
   }
 
   function getCurrentPathWithHash() {
@@ -404,25 +423,18 @@ void main() {
       adSlot.setAttribute("data-ad-slot", publicConfig.adsenseSlotId);
       adSlot.setAttribute("data-ad-format", "horizontal");
       adSlot.setAttribute("data-full-width-responsive", "true");
-      adContainer.hidden = false;
       if (!adsInitialized) {
         adsInitialized = true;
         window.adsbygoogle = window.adsbygoogle || [];
         window.adsbygoogle.push({});
       }
+      updateAdVisibility();
     };
     document.head.appendChild(script);
   }
 
   function updateAdVisibility() {
-    if (isPremiumUnlocked || !publicConfig.adsEnabled) {
-      adContainer.hidden = true;
-      return;
-    }
-
-    if (adsScriptLoaded && adsInitialized) {
-      adContainer.hidden = false;
-    }
+    adContainer.hidden = !shouldShowAdContainer();
   }
 
   function getPremiumScreenshotProfile() {
@@ -611,6 +623,7 @@ void main() {
     clearKeys();
     helpDialog.hidden = false;
     closeHelpButton.focus();
+    updateAdVisibility();
   }
 
   function closeHelp() {
@@ -618,6 +631,7 @@ void main() {
     clearKeys();
     helpDialog.hidden = true;
     helpButton.focus();
+    updateAdVisibility();
   }
 
   function openSettings() {
@@ -629,6 +643,7 @@ void main() {
     clearKeys();
     settingsDialog.hidden = false;
     minHitSlider.focus();
+    updateAdVisibility();
   }
 
   function closeSettings() {
@@ -636,6 +651,7 @@ void main() {
     clearKeys();
     settingsDialog.hidden = true;
     settingsButton.focus();
+    updateAdVisibility();
   }
 
   function fadeOutAndHideHint(element, done) {
@@ -817,8 +833,8 @@ void main() {
   document.addEventListener("contextmenu", suppressLongPressUi);
   document.addEventListener("selectstart", suppressLongPressUi);
   document.addEventListener("dragstart", suppressLongPressUi);
-  document.addEventListener("pointerdown", markInteractionForAds, { once: true });
-  document.addEventListener("keydown", markInteractionForAds, { once: true });
+  document.addEventListener("pointerdown", markInteractionForAds);
+  document.addEventListener("keydown", markInteractionForAds);
   settingsButton.addEventListener("click", openSettings);
   closeHelpButton.addEventListener("click", closeHelp);
   closeSettingsButton.addEventListener("click", closeSettings);

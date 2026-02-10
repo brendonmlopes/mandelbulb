@@ -12,6 +12,7 @@ describe("Mandelbulb web app smoke suite", () => {
   test("required project files exist", () => {
     const requiredFiles = [
       "index.html",
+      "favicon.svg",
       "style.css",
       "main.js",
       "bufferA.glsl",
@@ -42,6 +43,10 @@ describe("Mandelbulb web app smoke suite", () => {
     const html = readProjectFile("index.html");
 
     expect(html).toMatch(/<canvas[^>]*id=["']glCanvas["']/i);
+    expect(html).toMatch(/rel=["']icon["'][^>]*href=["']\.\/favicon\.svg["']/i);
+    expect(html).toMatch(/class=["'][^"']*social-links[^"']*["']/i);
+    expect(html).toMatch(/href=["']https:\/\/x\.com\/stack_overchill["']/i);
+    expect(html).toMatch(/href=["']https:\/\/www\.linkedin\.com\/in\/brendon-maia-lopes-a696581a4\/["']/i);
     expect(html).toMatch(/id=["']movementHint["']/i);
     expect(html).toMatch(/id=["']movementHintTitle["']/i);
     expect(html).toMatch(/Use\s+WASD\s+to\s+move/i);
@@ -121,6 +126,8 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("startCheckoutFlow");
     expect(source).toContain("initializeMonetization");
     expect(source).toContain("markInteractionForAds");
+    expect(source).toContain("shouldShowAdContainer");
+    expect(source).toContain("screenshotInProgress || isAnyModalOpen()");
     expect(source).toContain("WATERMARK_TEXT");
   });
 
