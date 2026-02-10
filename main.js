@@ -2,6 +2,9 @@
   "use strict";
 
   const canvas = document.getElementById("glCanvas");
+  const movementHint = document.getElementById("movementHint");
+  const turnHint = document.getElementById("turnHint");
+  const helpPointerHint = document.getElementById("helpPointerHint");
   const helpButton = document.getElementById("helpButton");
   const settingsButton = document.getElementById("settingsButton");
   const closeHelpButton = document.getElementById("closeHelpButton");
@@ -21,6 +24,9 @@
 
   if (
     !canvas ||
+    !movementHint ||
+    !turnHint ||
+    !helpPointerHint ||
     !helpButton ||
     !settingsButton ||
     !closeHelpButton ||
@@ -41,6 +47,9 @@
     return;
   }
 
+  turnHint.hidden = true;
+  helpPointerHint.hidden = true;
+
   const VERTEX_SHADER_SOURCE = `#version 300 es
 void main() {
   vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
@@ -55,6 +64,10 @@ void main() {
   const CONTROL_KEYCODES = new Set([
     16, 37, 38, 39, 40, 65, 68, 69, 81, 83, 87, 88, 90, 187, 189,
   ]);
+  const MOVEMENT_HINT_KEYCODES = new Set([87, 65, 83, 68]);
+  const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
+  const HINT_FADE_MS = 500;
+  const HELP_POINTER_MS = 10000;
 
   const keyCodeFallback = {
     ShiftLeft: 16,
@@ -84,6 +97,9 @@ void main() {
   let maxDistValue = 30.0;
   let glowStrengthValue = 1.0;
   let stepTintValue = 1.0;
+  let movementHintDismissed = false;
+  let turnHintDismissed = false;
+  let helpPointerTimerId = null;
 
   function showError(message, detail) {
     if (detail) {
@@ -109,6 +125,7 @@ void main() {
   }
 
   function openHelp() {
+    dismissHelpPointerHint(true);
     settingsOpen = false;
     settingsDialog.hidden = true;
     helpOpen = true;
@@ -142,6 +159,80 @@ void main() {
 
   function modalIsOpen() {
     return helpOpen || settingsOpen;
+  }
+
+  function fadeOutAndHideHint(element, done) {
+    element.classList.add("movement-hint--fading");
+    window.setTimeout(function hideHintAfterFade() {
+      element.hidden = true;
+      element.classList.remove("movement-hint--fading");
+      if (done) {
+        done();
+      }
+    }, HINT_FADE_MS);
+  }
+
+  function showTurnHint() {
+    if (!turnHint.hidden) {
+      return;
+    }
+
+    turnHint.hidden = false;
+  }
+
+  function showHelpPointerHint() {
+    if (!helpPointerHint.hidden) {
+      return;
+    }
+
+    helpPointerHint.hidden = false;
+    if (helpPointerTimerId !== null) {
+      window.clearTimeout(helpPointerTimerId);
+    }
+    helpPointerTimerId = window.setTimeout(function autoHideHelpPointerHint() {
+      dismissHelpPointerHint(false);
+    }, HELP_POINTER_MS);
+  }
+
+  function dismissHelpPointerHint(immediate) {
+    if (helpPointerHint.hidden) {
+      return;
+    }
+
+    if (helpPointerTimerId !== null) {
+      window.clearTimeout(helpPointerTimerId);
+      helpPointerTimerId = null;
+    }
+
+    if (immediate) {
+      helpPointerHint.hidden = true;
+      helpPointerHint.classList.remove("movement-hint--fading");
+      return;
+    }
+
+    if (helpPointerHint.classList.contains("movement-hint--fading")) {
+      return;
+    }
+
+    fadeOutAndHideHint(helpPointerHint);
+  }
+
+  function dismissMovementHint() {
+    if (movementHintDismissed || movementHint.hidden) {
+      return;
+    }
+
+    movementHintDismissed = true;
+    fadeOutAndHideHint(movementHint, showTurnHint);
+  }
+
+  function dismissTurnHint() {
+    if (turnHintDismissed || turnHint.hidden) {
+      return;
+    }
+
+    turnHintDismissed = true;
+    fadeOutAndHideHint(turnHint, showHelpPointerHint);
   }
 
   function clamp(value, min, max) {
@@ -260,6 +351,14 @@ void main() {
 
     if (modalIsOpen()) {
       return;
+    }
+
+    if (keyCode !== null && MOVEMENT_HINT_KEYCODES.has(keyCode)) {
+      dismissMovementHint();
+    }
+
+    if (keyCode !== null && TURN_HINT_KEYCODES.has(keyCode)) {
+      dismissTurnHint();
     }
 
     if (keyCode !== null) {

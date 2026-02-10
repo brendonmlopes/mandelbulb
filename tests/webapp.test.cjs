@@ -30,6 +30,11 @@ describe("Mandelbulb web app smoke suite", () => {
     const html = readProjectFile("index.html");
 
     expect(html).toMatch(/<canvas[^>]*id=["']glCanvas["']/i);
+    expect(html).toMatch(/id=["']movementHint["']/i);
+    expect(html).toMatch(/Use\s+WASD\s+to\s+move/i);
+    expect(html).toMatch(/id=["']turnHint["']/i);
+    expect(html).toMatch(/Use\s+Arrow\s+Keys\s+to\s+turn/i);
+    expect(html).toMatch(/id=["']helpPointerHint["']/i);
     expect(html).toMatch(/id=["']helpButton["']/i);
     expect(html).toMatch(/id=["']settingsButton["']/i);
     expect(html).toMatch(/id=["']helpDialog["']/i);
@@ -124,5 +129,11 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("Math.pow(10");
     expect(source).toContain("settingsButton");
     expect(source).toContain("modeValue");
+    expect(source).toContain("MOVEMENT_HINT_KEYCODES");
+    expect(source).toContain("TURN_HINT_KEYCODES");
+    expect(source).toContain("HELP_POINTER_MS");
+    expect(source).toContain("dismissMovementHint");
+    expect(source).toContain("dismissTurnHint");
+    expect(source).toContain("showHelpPointerHint");
   });
 });

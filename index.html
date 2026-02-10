@@ -11,6 +11,26 @@
 <body>
     <canvas id="glCanvas" aria-label="Mandelbulb viewport"></canvas>
 
+    <div id="movementHint" class="movement-hint" aria-label="Movement guide">
+        <p class="movement-hint-title">Use WASD to move</p>
+        <div class="movement-keys" aria-hidden="true">
+            <span class="movement-key movement-key-w">W</span>
+            <span class="movement-key movement-key-a">A</span>
+            <span class="movement-key movement-key-s">S</span>
+            <span class="movement-key movement-key-d">D</span>
+        </div>
+    </div>
+
+    <div id="turnHint" class="movement-hint" aria-label="Turn guide" hidden>
+        <p class="movement-hint-title">Use Arrow Keys to turn</p>
+        <div class="movement-keys" aria-hidden="true">
+            <span class="movement-key movement-key-w">&#8593;</span>
+            <span class="movement-key movement-key-a">&#8592;</span>
+            <span class="movement-key movement-key-s">&#8595;</span>
+            <span class="movement-key movement-key-d">&#8594;</span>
+        </div>
+    </div>
+
     <div class="overlay-controls">
         <button id="helpButton" class="overlay-button" type="button" aria-haspopup="dialog" aria-controls="helpDialog">
             Help
@@ -19,6 +39,11 @@
             aria-controls="settingsDialog">
             Settings
         </button>
+    </div>
+
+    <div id="helpPointerHint" class="help-pointer-hint" aria-label="Help shortcut" hidden>
+        <span class="help-pointer-text">More controls in Help</span>
+        <span class="help-pointer-arrow" aria-hidden="true">&#8599;</span>
     </div>
 
     <div id="helpDialog" class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
