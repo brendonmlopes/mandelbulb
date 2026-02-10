@@ -3,14 +3,19 @@
 
   const canvas = document.getElementById("glCanvas");
   const movementHint = document.getElementById("movementHint");
+  const movementHintTitle = document.getElementById("movementHintTitle");
   const turnHint = document.getElementById("turnHint");
+  const turnHintTitle = document.getElementById("turnHintTitle");
   const helpPointerHint = document.getElementById("helpPointerHint");
   const helpButton = document.getElementById("helpButton");
   const settingsButton = document.getElementById("settingsButton");
   const closeHelpButton = document.getElementById("closeHelpButton");
   const closeSettingsButton = document.getElementById("closeSettingsButton");
   const helpDialog = document.getElementById("helpDialog");
+  const helpDesktopContent = document.getElementById("helpDesktopContent");
+  const helpMobileContent = document.getElementById("helpMobileContent");
   const settingsDialog = document.getElementById("settingsDialog");
+  const mobileControls = document.getElementById("mobileControls");
   const minHitSlider = document.getElementById("minHitSlider");
   const minHitValueEl = document.getElementById("minHitValue");
   const modeSelect = document.getElementById("modeSelect");
@@ -20,19 +25,25 @@
   const glowValueEl = document.getElementById("glowValue");
   const stepTintSlider = document.getElementById("stepTintSlider");
   const stepTintValueEl = document.getElementById("stepTintValue");
+  const mobileKeyButtons = Array.from(document.querySelectorAll("[data-touch-keycode]"));
   const errorBanner = document.getElementById("errorBanner");
 
   if (
     !canvas ||
     !movementHint ||
+    !movementHintTitle ||
     !turnHint ||
+    !turnHintTitle ||
     !helpPointerHint ||
     !helpButton ||
     !settingsButton ||
     !closeHelpButton ||
     !closeSettingsButton ||
     !helpDialog ||
+    !helpDesktopContent ||
+    !helpMobileContent ||
     !settingsDialog ||
+    !mobileControls ||
     !minHitSlider ||
     !minHitValueEl ||
     !modeSelect ||
@@ -42,6 +53,7 @@
     !glowValueEl ||
     !stepTintSlider ||
     !stepTintValueEl ||
+    mobileKeyButtons.length === 0 ||
     !errorBanner
   ) {
     return;
@@ -61,6 +73,16 @@ void main() {
   const STATE_HEIGHT = 1;
   const KEYBOARD_TEX_WIDTH = 256;
 
+  function detectMobileClient() {
+    const ua = navigator.userAgent || "";
+    const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const coarse = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (touch && coarse);
+  }
+
+  const isMobileClient = detectMobileClient();
+  const devicePixelRatioCap = isMobileClient ? 1.0 : 2.0;
+
   const CONTROL_KEYCODES = new Set([
     16, 37, 38, 39, 40, 65, 68, 69, 81, 83, 87, 88, 90, 187, 189,
   ]);
@@ -68,6 +90,12 @@ void main() {
   const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
+  const MOBILE_DEFAULTS = {
+    minHitExponent: -2.6,
+    maxDist: 14.0,
+    glowStrength: 0.75,
+    stepTint: 0.75,
+  };
 
   const keyCodeFallback = {
     ShiftLeft: 16,
@@ -88,10 +116,14 @@ void main() {
     Minus: 189,
   };
 
+  const keyboardState = new Uint8Array(KEYBOARD_TEX_WIDTH);
+  const touchState = new Uint8Array(KEYBOARD_TEX_WIDTH);
   const keyState = new Uint8Array(KEYBOARD_TEX_WIDTH);
+  const touchPressCount = new Uint8Array(KEYBOARD_TEX_WIDTH);
+  const pointerToKeyCode = new Map();
   let helpOpen = false;
   let settingsOpen = false;
-  let minHitExponent = -4.0;
+  let minHitExponent = -3.5;
   let minHitValue = Math.pow(10, minHitExponent);
   let modeValue = 1;
   let maxDistValue = 30.0;
@@ -120,8 +152,134 @@ void main() {
     return null;
   }
 
+  function syncKeyState() {
+    for (let i = 0; i < KEYBOARD_TEX_WIDTH; i += 1) {
+      keyState[i] = keyboardState[i] || touchState[i] ? 255 : 0;
+    }
+  }
+
   function clearKeys() {
-    keyState.fill(0);
+    keyboardState.fill(0);
+    touchState.fill(0);
+    touchPressCount.fill(0);
+    pointerToKeyCode.clear();
+    syncKeyState();
+  }
+
+  function applyMobileProfile() {
+    if (!isMobileClient) {
+      mobileControls.hidden = true;
+      helpDesktopContent.hidden = false;
+      helpMobileContent.hidden = true;
+      movementHint.hidden = false;
+      turnHint.hidden = true;
+      helpPointerHint.hidden = true;
+      movementHintDismissed = false;
+      turnHintDismissed = false;
+      movementHintTitle.textContent = "Use WASD to move";
+      turnHintTitle.textContent = "Use Arrow Keys to turn";
+      return;
+    }
+
+    document.body.classList.add("mobile-device");
+    mobileControls.hidden = false;
+    helpDesktopContent.hidden = true;
+    helpMobileContent.hidden = false;
+    movementHint.hidden = true;
+    turnHint.hidden = true;
+    helpPointerHint.hidden = true;
+    movementHintDismissed = true;
+    turnHintDismissed = true;
+    movementHint.classList.remove("movement-hint--fading");
+    turnHint.classList.remove("movement-hint--fading");
+    helpPointerHint.classList.remove("movement-hint--fading");
+    if (helpPointerTimerId !== null) {
+      window.clearTimeout(helpPointerTimerId);
+      helpPointerTimerId = null;
+    }
+    movementHintTitle.textContent = "Use left pad to move";
+    turnHintTitle.textContent = "Use right pad to turn";
+
+    minHitExponent = MOBILE_DEFAULTS.minHitExponent;
+    maxDistValue = MOBILE_DEFAULTS.maxDist;
+    glowStrengthValue = MOBILE_DEFAULTS.glowStrength;
+    stepTintValue = MOBILE_DEFAULTS.stepTint;
+
+    minHitSlider.value = String(minHitExponent);
+    maxDistSlider.value = String(maxDistValue);
+    glowSlider.value = String(glowStrengthValue);
+    stepTintSlider.value = String(stepTintValue);
+  }
+
+  function setTouchKeyState(keyCode, pressed) {
+    if (!Number.isInteger(keyCode) || keyCode < 0 || keyCode >= KEYBOARD_TEX_WIDTH) {
+      return;
+    }
+
+    if (pressed) {
+      touchPressCount[keyCode] = Math.min(255, touchPressCount[keyCode] + 1);
+    } else if (touchPressCount[keyCode] > 0) {
+      touchPressCount[keyCode] -= 1;
+    }
+
+    touchState[keyCode] = touchPressCount[keyCode] > 0 ? 255 : 0;
+    syncKeyState();
+
+    if (pressed && MOVEMENT_HINT_KEYCODES.has(keyCode)) {
+      dismissMovementHint();
+    }
+    if (pressed && TURN_HINT_KEYCODES.has(keyCode)) {
+      dismissTurnHint();
+    }
+  }
+
+  function releaseTouchPointer(pointerId) {
+    const keyCode = pointerToKeyCode.get(pointerId);
+    if (typeof keyCode !== "number") {
+      return;
+    }
+
+    pointerToKeyCode.delete(pointerId);
+    setTouchKeyState(keyCode, false);
+  }
+
+  function bindMobileControls() {
+    for (let i = 0; i < mobileKeyButtons.length; i += 1) {
+      const button = mobileKeyButtons[i];
+      const keyCode = Number(button.dataset.touchKeycode);
+      if (!Number.isInteger(keyCode)) {
+        continue;
+      }
+
+      button.addEventListener("pointerdown", function onPointerDown(event) {
+        if (!isMobileClient || modalIsOpen()) {
+          return;
+        }
+
+        event.preventDefault();
+        if (pointerToKeyCode.has(event.pointerId)) {
+          return;
+        }
+
+        pointerToKeyCode.set(event.pointerId, keyCode);
+        if (button.setPointerCapture) {
+          button.setPointerCapture(event.pointerId);
+        }
+        setTouchKeyState(keyCode, true);
+      });
+
+      button.addEventListener("pointerup", function onPointerUp(event) {
+        releaseTouchPointer(event.pointerId);
+      });
+
+      button.addEventListener("pointercancel", function onPointerCancel(event) {
+        releaseTouchPointer(event.pointerId);
+      });
+
+      button.addEventListener("lostpointercapture", function onPointerCaptureLost(event) {
+        releaseTouchPointer(event.pointerId);
+      });
+    }
   }
 
   function openHelp() {
@@ -173,6 +331,10 @@ void main() {
   }
 
   function showTurnHint() {
+    if (isMobileClient) {
+      return;
+    }
+
     if (!turnHint.hidden) {
       return;
     }
@@ -181,6 +343,10 @@ void main() {
   }
 
   function showHelpPointerHint() {
+    if (isMobileClient) {
+      return;
+    }
+
     if (!helpPointerHint.hidden) {
       return;
     }
@@ -302,6 +468,9 @@ void main() {
     modeValue = parsed;
   }
 
+  applyMobileProfile();
+  bindMobileControls();
+
   helpButton.addEventListener("click", openHelp);
   settingsButton.addEventListener("click", openSettings);
   closeHelpButton.addEventListener("click", closeHelp);
@@ -362,14 +531,16 @@ void main() {
     }
 
     if (keyCode !== null) {
-      keyState[keyCode] = 255;
+      keyboardState[keyCode] = 255;
+      syncKeyState();
     }
   });
 
   window.addEventListener("keyup", function onKeyUp(event) {
     const keyCode = getLegacyKeyCode(event);
     if (keyCode !== null) {
-      keyState[keyCode] = 0;
+      keyboardState[keyCode] = 0;
+      syncKeyState();
     }
   });
 
@@ -593,7 +764,7 @@ void main() {
   }
 
   function resizeCanvasToDisplaySize(glContext, canvasElement) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, devicePixelRatioCap);
     const width = Math.max(1, Math.floor(window.innerWidth * dpr));
     const height = Math.max(1, Math.floor(window.innerHeight * dpr));
 

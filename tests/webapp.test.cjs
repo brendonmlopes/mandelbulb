@@ -31,10 +31,19 @@ describe("Mandelbulb web app smoke suite", () => {
 
     expect(html).toMatch(/<canvas[^>]*id=["']glCanvas["']/i);
     expect(html).toMatch(/id=["']movementHint["']/i);
+    expect(html).toMatch(/id=["']movementHintTitle["']/i);
     expect(html).toMatch(/Use\s+WASD\s+to\s+move/i);
     expect(html).toMatch(/id=["']turnHint["']/i);
+    expect(html).toMatch(/id=["']turnHintTitle["']/i);
     expect(html).toMatch(/Use\s+Arrow\s+Keys\s+to\s+turn/i);
     expect(html).toMatch(/id=["']helpPointerHint["']/i);
+    expect(html).toMatch(/id=["']mobileControls["']/i);
+    expect(html).toMatch(/id=["']helpDesktopContent["']/i);
+    expect(html).toMatch(/id=["']helpMobileContent["']/i);
+    expect(html).toMatch(/Touch\s+controls\s+are\s+enabled\s+for\s+your\s+phone/i);
+    expect(html).toMatch(/data-touch-keycode=["']87["']/i);
+    expect(html).toMatch(/data-touch-keycode=["']38["']/i);
+    expect(html).toMatch(/data-touch-keycode=["']69["']/i);
     expect(html).toMatch(/id=["']helpButton["']/i);
     expect(html).toMatch(/id=["']settingsButton["']/i);
     expect(html).toMatch(/id=["']helpDialog["']/i);
@@ -77,6 +86,8 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("loadText(\"./mainImage.glsl\")");
     expect(source).toContain("STATE_WIDTH");
     expect(source).toContain("KEYBOARD_TEX_WIDTH");
+    expect(source).toContain("detectMobileClient");
+    expect(source).toContain("devicePixelRatioCap");
   });
 
   test("bufferA shader still contains expected movement key bindings", () => {
@@ -131,6 +142,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("modeValue");
     expect(source).toContain("MOVEMENT_HINT_KEYCODES");
     expect(source).toContain("TURN_HINT_KEYCODES");
+    expect(source).toContain("MOBILE_DEFAULTS");
+    expect(source).toContain("bindMobileControls");
+    expect(source).toContain("setTouchKeyState");
     expect(source).toContain("HELP_POINTER_MS");
     expect(source).toContain("dismissMovementHint");
     expect(source).toContain("dismissTurnHint");
