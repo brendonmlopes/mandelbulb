@@ -38,6 +38,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/Use\s+Arrow\s+Keys\s+to\s+turn/i);
     expect(html).toMatch(/id=["']helpPointerHint["']/i);
     expect(html).toMatch(/id=["']mobileControls["']/i);
+    expect(html).toMatch(/id=["']mobileFovControl["']/i);
+    expect(html).toMatch(/id=["']mobileFovSlider["']/i);
+    expect(html).toMatch(/id=["']mobileFovValue["']/i);
     expect(html).toMatch(/id=["']helpDesktopContent["']/i);
     expect(html).toMatch(/id=["']helpMobileContent["']/i);
     expect(html).toMatch(/Touch\s+controls\s+are\s+enabled\s+for\s+your\s+phone/i);
@@ -106,7 +109,7 @@ describe("Mandelbulb web app smoke suite", () => {
 
     expect(imageShader).toMatch(/texelFetch\(iChannel0,\s*ivec2\(0,0\),\s*0\)/);
     expect(imageShader).toMatch(/texelFetch\(iChannel0,\s*ivec2\(1,0\),\s*0\)/);
-    expect(imageShader).toMatch(/float\s+FOV\s*=\s*s1\.z/);
+    expect(imageShader).toMatch(/float\s+FOV\s*=\s*\(uFovOverride\s*>\s*0\.0\)\s*\?\s*uFovOverride\s*:\s*s1\.z/);
     expect(imageShader).toMatch(/void\s+mainImage\s*\(/);
   });
 
@@ -122,6 +125,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/uniform\s+int\s+uMaxSteps\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uMbIters\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uLowPowerMode\s*;/);
+    expect(imageShader).toMatch(/uniform\s+float\s+uFovOverride\s*;/);
     expect(imageShader).toMatch(/uMode\s*==\s*2/);
     expect(imageShader).toMatch(/uMode\s*==\s*3/);
     expect(imageShader).toMatch(/i\s*>=\s*uMaxSteps/);
@@ -144,6 +148,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("uMaxSteps");
     expect(source).toContain("uMbIters");
     expect(source).toContain("uLowPowerMode");
+    expect(source).toContain("uFovOverride");
     expect(source).toContain("minHitValue * 5.0");
     expect(source).toContain("Math.pow(10");
     expect(source).toContain("settingsButton");
@@ -155,6 +160,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("targetFps");
     expect(source).toContain("bindMobileControls");
     expect(source).toContain("setTouchKeyState");
+    expect(source).toContain("mobileFovSlider");
     expect(source).toContain("HELP_POINTER_MS");
     expect(source).toContain("dismissMovementHint");
     expect(source).toContain("dismissTurnHint");

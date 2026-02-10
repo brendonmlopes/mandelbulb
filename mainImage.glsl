@@ -16,6 +16,7 @@ uniform float uStepTint;
 uniform int uMaxSteps;
 uniform int uMbIters;
 uniform int uLowPowerMode;
+uniform float uFovOverride;
 
 mat3 makeCamera(vec3 ro, vec3 ta, float roll)
 {
@@ -167,7 +168,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     mat3 cam = makeCamera(ro, ta, 0.0);
 
-    float FOV = s1.z;
+    float FOV = (uFovOverride > 0.0) ? uFovOverride : s1.z;
     vec3 rd = normalize(cam * vec3(uv, FOV));
 
     float t;

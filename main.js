@@ -16,6 +16,9 @@
   const helpMobileContent = document.getElementById("helpMobileContent");
   const settingsDialog = document.getElementById("settingsDialog");
   const mobileControls = document.getElementById("mobileControls");
+  const mobileFovControl = document.getElementById("mobileFovControl");
+  const mobileFovSlider = document.getElementById("mobileFovSlider");
+  const mobileFovValue = document.getElementById("mobileFovValue");
   const minHitSlider = document.getElementById("minHitSlider");
   const minHitValueEl = document.getElementById("minHitValue");
   const modeSelect = document.getElementById("modeSelect");
@@ -44,6 +47,9 @@
     !helpMobileContent ||
     !settingsDialog ||
     !mobileControls ||
+    !mobileFovControl ||
+    !mobileFovSlider ||
+    !mobileFovValue ||
     !minHitSlider ||
     !minHitValueEl ||
     !modeSelect ||
@@ -138,6 +144,7 @@ void main() {
   let lowPowerModeValue = 0;
   let renderScaleValue = 1.0;
   let targetFrameDelta = 0.0;
+  let fovOverrideValue = -1.0;
   let movementHintDismissed = false;
   let turnHintDismissed = false;
   let helpPointerTimerId = null;
@@ -148,6 +155,14 @@ void main() {
     }
     errorBanner.textContent = message;
     errorBanner.hidden = false;
+  }
+
+  function suppressLongPressUi(event) {
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLOptionElement) {
+      return;
+    }
+    event.preventDefault();
   }
 
   function getLegacyKeyCode(event) {
@@ -187,6 +202,8 @@ void main() {
       turnHintDismissed = false;
       movementHintTitle.textContent = "Use WASD to move";
       turnHintTitle.textContent = "Use Arrow Keys to turn";
+      mobileFovControl.hidden = true;
+      fovOverrideValue = -1.0;
       maxStepsValue = 300;
       mbItersValue = 20;
       lowPowerModeValue = 0;
@@ -213,6 +230,8 @@ void main() {
     }
     movementHintTitle.textContent = "Use left pad to move";
     turnHintTitle.textContent = "Use right pad to turn";
+    mobileFovControl.hidden = false;
+    fovOverrideValue = Number(mobileFovSlider.value) || 0.6;
 
     minHitExponent = MOBILE_DEFAULTS.minHitExponent;
     maxDistValue = MOBILE_DEFAULTS.maxDist;
@@ -487,10 +506,31 @@ void main() {
     modeValue = parsed;
   }
 
+  function updateMobileFovFromInput() {
+    const parsed = Number(mobileFovSlider.value);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    const clamped = clamp(parsed, 0.35, 1.2);
+    mobileFovSlider.value = clamped.toFixed(2);
+    mobileFovValue.textContent = clamped.toFixed(2);
+    fovOverrideValue = isMobileClient ? clamped : -1.0;
+  }
+
+  function syncMobileFovValue() {
+    if (!isMobileClient || mobileFovControl.hidden) {
+      return;
+    }
+    updateMobileFovFromInput();
+  }
+
   applyMobileProfile();
   bindMobileControls();
 
   helpButton.addEventListener("click", openHelp);
+  document.addEventListener("contextmenu", suppressLongPressUi);
+  document.addEventListener("selectstart", suppressLongPressUi);
+  document.addEventListener("dragstart", suppressLongPressUi);
   settingsButton.addEventListener("click", openSettings);
   closeHelpButton.addEventListener("click", closeHelp);
   closeSettingsButton.addEventListener("click", closeSettings);
@@ -508,6 +548,8 @@ void main() {
   minHitSlider.addEventListener("input", updateMinHitFromSlider);
   minHitSlider.addEventListener("change", updateMinHitFromSlider);
   modeSelect.addEventListener("change", updateModeFromInput);
+  mobileFovSlider.addEventListener("input", updateMobileFovFromInput);
+  mobileFovSlider.addEventListener("change", updateMobileFovFromInput);
   maxDistSlider.addEventListener("input", updateMaxDistFromSlider);
   maxDistSlider.addEventListener("change", updateMaxDistFromSlider);
   glowSlider.addEventListener("input", updateGlowFromSlider);
@@ -517,6 +559,7 @@ void main() {
 
   updateMinHitFromSlider();
   updateModeFromInput();
+  updateMobileFovFromInput();
   updateMaxDistFromSlider();
   updateGlowFromSlider();
   updateStepTintFromSlider();
@@ -740,6 +783,7 @@ void main() {
       uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
+      uFovOverride: gl.getUniformLocation(program, "uFovOverride"),
       channels: channels,
     };
   }
@@ -783,6 +827,9 @@ void main() {
     }
     if (bundle.uLowPowerMode !== null) {
       gl.uniform1i(bundle.uLowPowerMode, lowPowerModeValue);
+    }
+    if (bundle.uFovOverride !== null) {
+      gl.uniform1f(bundle.uFovOverride, fovOverrideValue);
     }
   }
 
@@ -915,6 +962,8 @@ void main() {
       const delta = Math.max(1.0 / 240.0, Math.min(0.25, now - lastTime));
       lastTime = now;
       lastPresentTime = now;
+
+      syncMobileFovValue();
 
       resizeCanvasToDisplaySize(gl, canvas);
       updateKeyboardTexture(gl, keyboardTexture);
