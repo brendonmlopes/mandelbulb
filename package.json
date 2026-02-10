@@ -1,0 +1,14 @@
+{
+  "name": "mandelbulb-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fullscreen Mandelbulb explorer with Shadertoy-style shader pipeline",
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "check": "npm run test"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
