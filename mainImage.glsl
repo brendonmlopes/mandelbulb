@@ -5,7 +5,7 @@
 precision highp float;
 #endif
 
-const int   MAX_STEPS_CAP = 320;
+const int   MAX_STEPS_CAP = 1000;
 const int   MB_ITERS_CAP  = 24;
 uniform float uMinHit;
 uniform float uEps;

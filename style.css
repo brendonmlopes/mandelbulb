@@ -333,6 +333,54 @@ body {
   transition: transform 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
+.screenshot-button {
+  position: fixed;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 18;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: linear-gradient(120deg, rgba(8, 25, 35, 0.88), rgba(15, 38, 51, 0.8));
+  color: var(--ui-text);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
+}
+
+.screenshot-icon {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.screenshot-button:hover {
+  transform: translateY(calc(-50% - 1px));
+  border-color: var(--ui-accent);
+  color: #f5fdff;
+}
+
+.screenshot-button:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.screenshot-button:disabled .screenshot-icon {
+  animation: screenshotPulse 1s ease-in-out infinite;
+}
+
+@keyframes screenshotPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+
 .overlay-controls {
   position: fixed;
   top: 18px;
@@ -586,6 +634,17 @@ body {
 
   .mobile-fov-control input[type="range"] {
     height: 110px;
+  }
+
+  .screenshot-button {
+    left: 6px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .screenshot-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .overlay-controls {

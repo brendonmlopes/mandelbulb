@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">Mandelbulb mode transformations</title>
+  <desc id="desc">Diagram comparing normal space, domain-warped mode, and orbit-seed warped mode.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081421"/>
+      <stop offset="100%" stop-color="#13273a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#112638"/>
+      <stop offset="100%" stop-color="#173247"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 22px Trebuchet MS, Segoe UI, sans-serif; fill: #e9f8ff; }
+      .h { font: 700 16px Trebuchet MS, Segoe UI, sans-serif; fill: #f0fbff; }
+      .t { font: 500 13px Trebuchet MS, Segoe UI, sans-serif; fill: #c6deea; }
+      .code { font: 600 13px 'Courier New', monospace; fill: #ffd39a; }
+      .box { fill: url(#card); stroke: #8ecfdc; stroke-width: 1.4; }
+      .arrow { stroke: #8ecfdc; stroke-width: 2; marker-end: url(#m); }
+      .blob { fill: #7fc9d8; opacity: 0.82; }
+      .blob2 { fill: #f0b26b; opacity: 0.82; }
+    </style>
+    <marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8ecfdc"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="560" rx="18" fill="url(#bg)"/>
+  <text class="title" x="36" y="44">How each mode transforms Mandelbulb space</text>
+
+  <rect class="box" x="28" y="82" rx="12" width="292" height="430"/>
+  <rect class="box" x="344" y="82" rx="12" width="292" height="430"/>
+  <rect class="box" x="660" y="82" rx="12" width="292" height="430"/>
+
+  <text class="h" x="46" y="114">Mode 1: Normal</text>
+  <text class="code" x="46" y="140">mapScene(p) = DE(p)</text>
+  <text class="code" x="46" y="162">z0 = p</text>
+  <ellipse class="blob" cx="170" cy="290" rx="90" ry="108"/>
+  <ellipse class="blob2" cx="182" cy="300" rx="44" ry="56"/>
+  <text class="t" x="46" y="448">Direct world-space sampling,</text>
+  <text class="t" x="46" y="468">classic Mandelbulb behavior.</text>
+
+  <text class="h" x="362" y="114">Mode 2: Domain warp</text>
+  <text class="code" x="362" y="140">mapScene(p) = DE(sin(p))</text>
+  <text class="code" x="362" y="162">z0 = p (inside DE)</text>
+  <path class="blob" d="M424,356 C374,288 402,206 488,202 C552,198 593,254 560,324 C535,378 459,399 424,356 Z"/>
+  <path class="blob2" d="M468,333 C439,293 454,248 506,248 C547,248 567,287 548,322 C533,352 488,360 468,333 Z"/>
+  <text class="t" x="362" y="448">Input points are sinusoidally</text>
+  <text class="t" x="362" y="468">folded before DE evaluation.</text>
+
+  <text class="h" x="678" y="114">Mode 3: Orbit-seed warp</text>
+  <text class="code" x="678" y="140">mapScene(p) = DE(p)</text>
+  <text class="code" x="678" y="162">z0 = sin(p)</text>
+  <path class="blob" d="M740,363 C704,307 728,216 812,198 C881,183 925,248 907,316 C892,373 811,417 740,363 Z"/>
+  <path class="blob2" d="M780,347 C755,305 771,243 823,232 C865,223 893,266 884,309 C876,345 833,379 780,347 Z"/>
+  <text class="t" x="678" y="448">Sampling stays in world space,</text>
+  <text class="t" x="678" y="468">but DE orbit starts from sin(p).</text>
+
+  <line class="arrow" x1="320" y1="220" x2="344" y2="220"/>
+  <line class="arrow" x1="636" y1="220" x2="660" y2="220"/>
+</svg>

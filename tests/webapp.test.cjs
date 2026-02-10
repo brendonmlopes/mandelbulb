@@ -16,6 +16,7 @@ describe("Mandelbulb web app smoke suite", () => {
       "main.js",
       "bufferA.glsl",
       "mainImage.glsl",
+      "screenshot-worker.js",
       "package.json",
       "jest.config.cjs",
     ];
@@ -41,6 +42,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/id=["']mobileFovControl["']/i);
     expect(html).toMatch(/id=["']mobileFovSlider["']/i);
     expect(html).toMatch(/id=["']mobileFovValue["']/i);
+    expect(html).toMatch(/id=["']screenshotButton["']/i);
+    expect(html).toMatch(/class=["'][^"']*screenshot-icon[^"']*["']/i);
+    expect(html).toMatch(/aria-label=["']Capture screenshot["']/i);
     expect(html).toMatch(/id=["']helpDesktopContent["']/i);
     expect(html).toMatch(/id=["']helpMobileContent["']/i);
     expect(html).toMatch(/Touch\s+controls\s+are\s+enabled\s+for\s+your\s+phone/i);
@@ -89,8 +93,24 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("loadText(\"./mainImage.glsl\")");
     expect(source).toContain("STATE_WIDTH");
     expect(source).toContain("KEYBOARD_TEX_WIDTH");
+    expect(source).toContain("screenshot-worker.js");
+    expect(source).toContain("getScreenshotDimensions");
+    expect(source).toContain("uMaxSteps: maxStepsValue");
+    expect(source).toContain("uMaxDist: maxDistValue");
+    expect(source).toContain("uMinHit: minHitValue");
     expect(source).toContain("detectMobileClient");
     expect(source).toContain("devicePixelRatioCap");
+  });
+
+  test("screenshot worker file is wired for hi-res rendering", () => {
+    const workerSource = readProjectFile("screenshot-worker.js");
+
+    expect(workerSource).toContain("OffscreenCanvas");
+    expect(workerSource).toContain("convertToBlob");
+    expect(workerSource).toContain("uMaxSteps");
+    expect(workerSource).toContain("uMaxDist");
+    expect(workerSource).toContain("uMinHit");
+    expect(workerSource).toContain("self.onmessage");
   });
 
   test("bufferA shader still contains expected movement key bindings", () => {
@@ -126,6 +146,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/uniform\s+int\s+uMbIters\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uLowPowerMode\s*;/);
     expect(imageShader).toMatch(/uniform\s+float\s+uFovOverride\s*;/);
+    expect(imageShader).toMatch(/MAX_STEPS_CAP\s*=\s*1000/);
     expect(imageShader).toMatch(/uMode\s*==\s*2/);
     expect(imageShader).toMatch(/uMode\s*==\s*3/);
     expect(imageShader).toMatch(/i\s*>=\s*uMaxSteps/);

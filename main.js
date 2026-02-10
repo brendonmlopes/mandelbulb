@@ -19,6 +19,7 @@
   const mobileFovControl = document.getElementById("mobileFovControl");
   const mobileFovSlider = document.getElementById("mobileFovSlider");
   const mobileFovValue = document.getElementById("mobileFovValue");
+  const screenshotButton = document.getElementById("screenshotButton");
   const minHitSlider = document.getElementById("minHitSlider");
   const minHitValueEl = document.getElementById("minHitValue");
   const modeSelect = document.getElementById("modeSelect");
@@ -50,6 +51,7 @@
     !mobileFovControl ||
     !mobileFovSlider ||
     !mobileFovValue ||
+    !screenshotButton ||
     !minHitSlider ||
     !minHitValueEl ||
     !modeSelect ||
@@ -148,6 +150,7 @@ void main() {
   let movementHintDismissed = false;
   let turnHintDismissed = false;
   let helpPointerTimerId = null;
+  let screenshotInProgress = false;
 
   function showError(message, detail) {
     if (detail) {
@@ -155,6 +158,35 @@ void main() {
     }
     errorBanner.textContent = message;
     errorBanner.hidden = false;
+  }
+
+  function setScreenshotBusy(isBusy) {
+    screenshotInProgress = isBusy;
+    screenshotButton.disabled = isBusy;
+    screenshotButton.setAttribute(
+      "aria-label",
+      isBusy ? "Rendering screenshot" : "Capture screenshot"
+    );
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function revokeScreenshotUrl() {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
+  function getScreenshotDimensions() {
+    return {
+      width: Math.max(1, canvas.width),
+      height: Math.max(1, canvas.height),
+    };
   }
 
   function suppressLongPressUi(event) {
@@ -866,6 +898,46 @@ void main() {
     return response.text();
   }
 
+  function buildScreenshotFileName() {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    return "mandelbulb-" + stamp + ".png";
+  }
+
+  async function renderScreenshotInWorker(payload) {
+    if (typeof Worker === "undefined") {
+      throw new Error("Web Workers are not supported in this browser.");
+    }
+
+    return new Promise(function workerPromise(resolve, reject) {
+      const worker = new Worker("./screenshot-worker.js", { type: "module" });
+
+      function cleanup() {
+        worker.onmessage = null;
+        worker.onerror = null;
+        worker.terminate();
+      }
+
+      worker.onmessage = function onWorkerMessage(event) {
+        const data = event.data || {};
+        cleanup();
+
+        if (!data.ok) {
+          reject(new Error(data.error || "Screenshot worker failed."));
+          return;
+        }
+
+        resolve(data);
+      };
+
+      worker.onerror = function onWorkerError(event) {
+        cleanup();
+        reject(new Error(event.message || "Screenshot worker crashed."));
+      };
+
+      worker.postMessage(payload, [payload.stateBuffer]);
+    });
+  }
+
   async function init() {
     const gl = canvas.getContext("webgl2", {
       alpha: false,
@@ -951,6 +1023,59 @@ void main() {
     let frame = 0;
     let lastTime = performance.now() * 0.001;
     let lastPresentTime = lastTime;
+    let currentTimeSec = lastTime;
+
+    async function handleScreenshotClick() {
+      if (screenshotInProgress) {
+        return;
+      }
+
+      setScreenshotBusy(true);
+
+      try {
+        const statePixels = new Float32Array(STATE_WIDTH * STATE_HEIGHT * 4);
+        const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, readState.framebuffer);
+        gl.readPixels(0, 0, STATE_WIDTH, STATE_HEIGHT, gl.RGBA, gl.FLOAT, statePixels);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
+
+        const dims = getScreenshotDimensions();
+        const screenshotPayload = {
+          width: dims.width,
+          height: dims.height,
+          fileName: buildScreenshotFileName(),
+          mainImageSource: rawMainImage,
+          stateBuffer: statePixels.buffer,
+          uniforms: {
+            iTime: currentTimeSec,
+            iTimeDelta: 1.0 / 60.0,
+            iFrame: frame,
+            uMinHit: minHitValue,
+            uEps: minHitValue * 5.0,
+            uMode: modeValue,
+            uMaxDist: maxDistValue,
+            uGlowStrength: glowStrengthValue,
+            uStepTint: stepTintValue,
+            uMaxSteps: maxStepsValue,
+            uMbIters: mbItersValue,
+            uLowPowerMode: lowPowerModeValue,
+            uFovOverride: fovOverrideValue,
+          },
+        };
+
+        const result = await renderScreenshotInWorker(screenshotPayload);
+        const blob = new Blob([result.blobBuffer], { type: "image/png" });
+        downloadBlob(blob, result.fileName || screenshotPayload.fileName);
+      } catch (error) {
+        showError("Screenshot failed. See console for details.", error);
+      } finally {
+        setScreenshotBusy(false);
+      }
+    }
+
+    screenshotButton.addEventListener("click", function onScreenshotClick() {
+      handleScreenshotClick();
+    });
 
     function render(nowMillis) {
       const now = nowMillis * 0.001;
@@ -962,6 +1087,7 @@ void main() {
       const delta = Math.max(1.0 / 240.0, Math.min(0.25, now - lastTime));
       lastTime = now;
       lastPresentTime = now;
+      currentTimeSec = now;
 
       syncMobileFovValue();
 
