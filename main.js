@@ -467,12 +467,12 @@ void main() {
   }
 
   function getLegacyKeyCode(event) {
-    if (typeof event.keyCode === "number" && event.keyCode > 0 && event.keyCode < KEYBOARD_TEX_WIDTH) {
-      return event.keyCode;
-    }
     const fallback = keyCodeFallback[event.code];
     if (typeof fallback === "number") {
       return fallback;
+    }
+    if (typeof event.keyCode === "number" && event.keyCode > 0 && event.keyCode < KEYBOARD_TEX_WIDTH) {
+      return event.keyCode;
     }
     return null;
   }
