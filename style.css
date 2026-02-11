@@ -37,6 +37,16 @@ body {
   width: 100vw;
   height: 100vh;
   display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+body.mobile-device #glCanvas {
+  cursor: default;
+}
+
+body.pointer-look-active #glCanvas {
+  cursor: grabbing;
 }
 
 .social-links {
@@ -157,6 +167,67 @@ body {
   text-transform: uppercase;
   backdrop-filter: blur(5px);
   box-shadow: 0 8px 24px rgba(3, 12, 18, 0.35);
+}
+
+.movement-hint-title-secondary {
+  margin-top: 2px;
+}
+
+.mouse-hint-icon {
+  position: relative;
+  width: 34px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  animation: mouseDragNudge 1.9s ease-in-out infinite;
+}
+
+.mouse-hint-body {
+  width: 30px;
+  height: 44px;
+  border: 2px solid rgba(149, 208, 215, 0.7);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(14, 37, 49, 0.74), rgba(8, 22, 29, 0.64));
+  box-shadow: inset 0 -4px 10px rgba(0, 0, 0, 0.3), 0 8px 18px rgba(2, 8, 12, 0.35);
+}
+
+.mouse-hint-wheel {
+  position: absolute;
+  top: 9px;
+  width: 4px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(241, 251, 255, 0.9);
+  animation: mouseWheelDrag 1.9s ease-in-out infinite;
+}
+
+@keyframes mouseDragNudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35% {
+    transform: translateX(-3px);
+  }
+  70% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes mouseWheelDrag {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.9;
+  }
+  35% {
+    transform: translate(-2px, 2px);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(2px, 4px);
+    opacity: 0.7;
+  }
 }
 
 .movement-keys {
@@ -671,6 +742,21 @@ body {
     font-size: 12px;
     letter-spacing: 0.06em;
     padding: 7px 12px;
+  }
+
+  .mouse-hint-icon {
+    width: 30px;
+    height: 42px;
+  }
+
+  .mouse-hint-body {
+    width: 26px;
+    height: 38px;
+  }
+
+  .mouse-hint-wheel {
+    top: 8px;
+    height: 8px;
   }
 
   .movement-keys {

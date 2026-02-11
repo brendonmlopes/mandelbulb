@@ -52,7 +52,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/Use\s+WASD\s+to\s+move/i);
     expect(html).toMatch(/id=["']turnHint["']/i);
     expect(html).toMatch(/id=["']turnHintTitle["']/i);
-    expect(html).toMatch(/Use\s+Arrow\s+Keys\s+to\s+turn/i);
+    expect(html).toMatch(/Use\s+arrows\s+to\s+turn/i);
+    expect(html).toMatch(/or\s+Click\s+and\s+drag/i);
+    expect(html).toMatch(/class=["'][^"']*mouse-hint-icon[^"']*["']/i);
     expect(html).toMatch(/id=["']helpPointerHint["']/i);
     expect(html).toMatch(/id=["']mobileControls["']/i);
     expect(html).toMatch(/id=["']mobileFovControl["']/i);
@@ -250,10 +252,22 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("targetFps");
     expect(source).toContain("bindMobileControls");
     expect(source).toContain("setTouchKeyState");
+    expect(source).toContain("beginPointerLook");
+    expect(source).toContain("updatePointerLook");
+    expect(source).toContain("canvas.addEventListener(\"pointerdown\"");
+    expect(source).toContain("uLookDelta");
     expect(source).toContain("mobileFovSlider");
     expect(source).toContain("HELP_POINTER_MS");
     expect(source).toContain("dismissMovementHint");
     expect(source).toContain("dismissTurnHint");
     expect(source).toContain("showHelpPointerHint");
+  });
+
+  test("bufferA shader accepts pointer look deltas", () => {
+    const bufferShader = readProjectFile("bufferA.glsl");
+
+    expect(bufferShader).toMatch(/uniform\s+vec2\s+uLookDelta\s*;/);
+    expect(bufferShader).toMatch(/yaw\s*\+=\s*yawIn\s*\*\s*lookSpeed\s*\*\s*dt\s*\+\s*uLookDelta\.x/);
+    expect(bufferShader).toMatch(/pitch\s*\+=\s*pitIn\s*\*\s*lookSpeed\s*\*\s*dt\s*\+\s*uLookDelta\.y/);
   });
 });

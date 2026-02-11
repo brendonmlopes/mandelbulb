@@ -114,6 +114,8 @@ void main() {
   const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
+  const LOOK_SENSITIVITY_DESKTOP = 0.003;
+  const LOOK_SENSITIVITY_MOBILE = 0.0045;
   const PREMIUM_UNLOCK_TOKEN_KEY = "mandelbulb_premium_unlock_token";
   const PREMIUM_PRESET_KEY = "mandelbulb_premium_preset";
   const CHECKOUT_SUCCESS_KEY = "checkout";
@@ -194,6 +196,12 @@ void main() {
   };
   let adsScriptLoaded = false;
   let adsInitialized = false;
+  let isPointerLooking = false;
+  let activeLookPointerId = null;
+  let lastLookClientX = 0;
+  let lastLookClientY = 0;
+  let pendingLookYawDelta = 0.0;
+  let pendingLookPitchDelta = 0.0;
 
   function showError(message, detail) {
     if (detail) {
@@ -475,12 +483,78 @@ void main() {
     }
   }
 
+  function clearPointerLook() {
+    isPointerLooking = false;
+    activeLookPointerId = null;
+    lastLookClientX = 0;
+    lastLookClientY = 0;
+    pendingLookYawDelta = 0.0;
+    pendingLookPitchDelta = 0.0;
+    document.body.classList.remove("pointer-look-active");
+  }
+
   function clearKeys() {
     keyboardState.fill(0);
     touchState.fill(0);
     touchPressCount.fill(0);
     pointerToKeyCode.clear();
     syncKeyState();
+    clearPointerLook();
+  }
+
+  function beginPointerLook(event) {
+    if (isAnyModalOpen()) {
+      return;
+    }
+
+    if (activeLookPointerId !== null) {
+      return;
+    }
+
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    activeLookPointerId = event.pointerId;
+    isPointerLooking = true;
+    lastLookClientX = event.clientX;
+    lastLookClientY = event.clientY;
+    if (!isMobileClient) {
+      document.body.classList.add("pointer-look-active");
+    }
+    if (canvas.setPointerCapture) {
+      canvas.setPointerCapture(event.pointerId);
+    }
+    dismissTurnHint();
+    markInteractionForAds();
+  }
+
+  function updatePointerLook(event) {
+    if (!isPointerLooking || event.pointerId !== activeLookPointerId || isAnyModalOpen()) {
+      return;
+    }
+
+    const deltaX = event.clientX - lastLookClientX;
+    const deltaY = event.clientY - lastLookClientY;
+    lastLookClientX = event.clientX;
+    lastLookClientY = event.clientY;
+
+    const sensitivity = isMobileClient ? LOOK_SENSITIVITY_MOBILE : LOOK_SENSITIVITY_DESKTOP;
+    pendingLookYawDelta += deltaX * sensitivity;
+    pendingLookPitchDelta += -deltaY * sensitivity;
+    dismissTurnHint();
+  }
+
+  function endPointerLook(pointerId) {
+    if (pointerId !== activeLookPointerId) {
+      return;
+    }
+
+    isPointerLooking = false;
+    activeLookPointerId = null;
+    if (!isMobileClient) {
+      document.body.classList.remove("pointer-look-active");
+    }
   }
 
   function applyMobileProfile() {
@@ -494,7 +568,7 @@ void main() {
       movementHintDismissed = false;
       turnHintDismissed = false;
       movementHintTitle.textContent = "Use WASD to move";
-      turnHintTitle.textContent = "Use Arrow Keys to turn";
+      turnHintTitle.textContent = "Use arrows to turn";
       mobileFovControl.hidden = true;
       fovOverrideValue = -1.0;
       maxStepsValue = 300;
@@ -858,6 +932,27 @@ void main() {
       closePaywall();
     }
   });
+  canvas.addEventListener("pointerdown", function onCanvasPointerDown(event) {
+    beginPointerLook(event);
+    if (event.pointerType !== "mouse") {
+      event.preventDefault();
+    }
+  });
+  canvas.addEventListener("pointermove", function onCanvasPointerMove(event) {
+    updatePointerLook(event);
+    if (isPointerLooking && event.pointerType !== "mouse") {
+      event.preventDefault();
+    }
+  });
+  canvas.addEventListener("pointerup", function onCanvasPointerUp(event) {
+    endPointerLook(event.pointerId);
+  });
+  canvas.addEventListener("pointercancel", function onCanvasPointerCancel(event) {
+    endPointerLook(event.pointerId);
+  });
+  canvas.addEventListener("lostpointercapture", function onCanvasPointerCaptureLost(event) {
+    endPointerLook(event.pointerId);
+  });
 
   minHitSlider.addEventListener("input", updateMinHitFromSlider);
   minHitSlider.addEventListener("change", updateMinHitFromSlider);
@@ -1107,11 +1202,12 @@ void main() {
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
       uFovOverride: gl.getUniformLocation(program, "uFovOverride"),
+      uLookDelta: gl.getUniformLocation(program, "uLookDelta"),
       channels: channels,
     };
   }
 
-  function setUniforms(gl, bundle, width, height, time, delta, frame) {
+  function setUniforms(gl, bundle, width, height, time, delta, frame, lookYawDelta, lookPitchDelta) {
     if (bundle.iResolution !== null) {
       gl.uniform3f(bundle.iResolution, width, height, 1.0);
     }
@@ -1153,6 +1249,9 @@ void main() {
     }
     if (bundle.uFovOverride !== null) {
       gl.uniform1f(bundle.uFovOverride, fovOverrideValue);
+    }
+    if (bundle.uLookDelta !== null) {
+      gl.uniform2f(bundle.uLookDelta, lookYawDelta, lookPitchDelta);
     }
   }
 
@@ -1427,6 +1526,10 @@ void main() {
       currentTimeSec = now;
 
       syncMobileFovValue();
+      const lookYawDelta = pendingLookYawDelta;
+      const lookPitchDelta = pendingLookPitchDelta;
+      pendingLookYawDelta = 0.0;
+      pendingLookPitchDelta = 0.0;
 
       resizeCanvasToDisplaySize(gl, canvas);
       updateKeyboardTexture(gl, keyboardTexture);
@@ -1434,7 +1537,7 @@ void main() {
       gl.useProgram(bufferProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeState.framebuffer);
       gl.viewport(0, 0, STATE_WIDTH, STATE_HEIGHT);
-      setUniforms(gl, bufferUniforms, STATE_WIDTH, STATE_HEIGHT, now, delta, frame);
+      setUniforms(gl, bufferUniforms, STATE_WIDTH, STATE_HEIGHT, now, delta, frame, lookYawDelta, lookPitchDelta);
       bindTextureAt(gl, 0, readState.texture, bufferUniforms.channels[0]);
       bindTextureAt(gl, 1, keyboardTexture, bufferUniforms.channels[1]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1442,7 +1545,7 @@ void main() {
       gl.useProgram(imageProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      setUniforms(gl, imageUniforms, canvas.width, canvas.height, now, delta, frame);
+      setUniforms(gl, imageUniforms, canvas.width, canvas.height, now, delta, frame, 0.0, 0.0);
       bindTextureAt(gl, 0, writeState.texture, imageUniforms.channels[0]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 

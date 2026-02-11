@@ -6,6 +6,8 @@
 precision highp float;
 #endif
 
+uniform vec2 uLookDelta;
+
 bool keyDown(int key)
 {
     return texelFetch(iChannel1, ivec2(key, 0), 0).r > 0.5;
@@ -58,8 +60,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float pitIn = (keyDown(38) ? 1.0 : 0.0) - (keyDown(40) ? 1.0 : 0.0); // Up/Down
 
     float lookSpeed = 1.8;
-    yaw   += yawIn * lookSpeed * dt;
-    pitch += pitIn * lookSpeed * dt;
+    yaw   += yawIn * lookSpeed * dt + uLookDelta.x;
+    pitch += pitIn * lookSpeed * dt + uLookDelta.y;
     pitch = clamp(pitch, -1.55, 1.55);
 
     // Movement step adjust: Z/X
@@ -88,4 +90,3 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     if (fc.x == 0) fragColor = vec4(pos, yaw);
     else           fragColor = vec4(pitch, moveStep, fov, 0.0); // <--- store fov in .z
 }
-
