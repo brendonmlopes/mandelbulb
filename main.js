@@ -35,6 +35,25 @@
   const glowValueEl = document.getElementById("glowValue");
   const stepTintSlider = document.getElementById("stepTintSlider");
   const stepTintValueEl = document.getElementById("stepTintValue");
+  const visualPresetSelect = document.getElementById("visualPresetSelect");
+  const exposureSlider = document.getElementById("exposureSlider");
+  const exposureValueEl = document.getElementById("exposureValue");
+  const contrastSlider = document.getElementById("contrastSlider");
+  const contrastValueEl = document.getElementById("contrastValue");
+  const saturationSlider = document.getElementById("saturationSlider");
+  const saturationValueEl = document.getElementById("saturationValue");
+  const sunAzimuthSlider = document.getElementById("sunAzimuthSlider");
+  const sunAzimuthValueEl = document.getElementById("sunAzimuthValue");
+  const sunElevationSlider = document.getElementById("sunElevationSlider");
+  const sunElevationValueEl = document.getElementById("sunElevationValue");
+  const sunIntensitySlider = document.getElementById("sunIntensitySlider");
+  const sunIntensityValueEl = document.getElementById("sunIntensityValue");
+  const fogDensitySlider = document.getElementById("fogDensitySlider");
+  const fogDensityValueEl = document.getElementById("fogDensityValue");
+  const roughnessSlider = document.getElementById("roughnessSlider");
+  const roughnessValueEl = document.getElementById("roughnessValue");
+  const baseHueSlider = document.getElementById("baseHueSlider");
+  const baseColorValueEl = document.getElementById("baseColorValue");
   const adContainer = document.getElementById("adContainer");
   const adSlot = document.getElementById("adSlot");
   const mobileKeyButtons = Array.from(document.querySelectorAll("[data-touch-keycode]"));
@@ -75,6 +94,25 @@
     !glowValueEl ||
     !stepTintSlider ||
     !stepTintValueEl ||
+    !visualPresetSelect ||
+    !exposureSlider ||
+    !exposureValueEl ||
+    !contrastSlider ||
+    !contrastValueEl ||
+    !saturationSlider ||
+    !saturationValueEl ||
+    !sunAzimuthSlider ||
+    !sunAzimuthValueEl ||
+    !sunElevationSlider ||
+    !sunElevationValueEl ||
+    !sunIntensitySlider ||
+    !sunIntensityValueEl ||
+    !fogDensitySlider ||
+    !fogDensityValueEl ||
+    !roughnessSlider ||
+    !roughnessValueEl ||
+    !baseHueSlider ||
+    !baseColorValueEl ||
     !adContainer ||
     !adSlot ||
     mobileKeyButtons.length === 0 ||
@@ -114,6 +152,8 @@ void main() {
   const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
+  const BASE_COLOR_SATURATION = 0.82;
+  const BASE_COLOR_VALUE = 1.0;
   const MIN_HIT_EXP_MIN = -6.0;
   const MIN_HIT_EXP_MAX = -2.0;
   const MIN_HIT_SLIDER_MIN = 0.0;
@@ -124,6 +164,61 @@ void main() {
   const PREMIUM_PRESET_KEY = "mandelbulb_premium_preset";
   const CHECKOUT_SUCCESS_KEY = "checkout";
   const CHECKOUT_SESSION_ID_KEY = "session_id";
+  const VISUAL_PRESET_KEY = "mandelbulb_visual_preset";
+  const VISUAL_PRESETS = {
+    vibrant: {
+      glowStrength: 0.05,
+      stepTint: 0.62,
+      baseColorHex: "#2d75ff",
+      exposure: 0.22,
+      contrast: 1.14,
+      saturation: 1.33,
+      sunAzimuthDegrees: 30.0,
+      sunElevationDegrees: 26.0,
+      sunIntensity: 1.28,
+      fogDensity: 0.023,
+      roughness: 0.3,
+    },
+    cinematic: {
+      glowStrength: 0.02,
+      stepTint: 0.38,
+      baseColorHex: "#4f66b9",
+      exposure: 0.0,
+      contrast: 1.2,
+      saturation: 1.06,
+      sunAzimuthDegrees: 16.0,
+      sunElevationDegrees: 18.0,
+      sunIntensity: 1.06,
+      fogDensity: 0.03,
+      roughness: 0.4,
+    },
+    neon: {
+      glowStrength: 0.32,
+      stepTint: 0.76,
+      baseColorHex: "#17d5ff",
+      exposure: 0.3,
+      contrast: 1.1,
+      saturation: 1.55,
+      sunAzimuthDegrees: 44.0,
+      sunElevationDegrees: 32.0,
+      sunIntensity: 1.42,
+      fogDensity: 0.018,
+      roughness: 0.22,
+    },
+    solar: {
+      glowStrength: 0.25,
+      stepTint: 0.5,
+      baseColorHex: "#ff6f3c",
+      exposure: 0.15,
+      contrast: 1.09,
+      saturation: 1.25,
+      sunAzimuthDegrees: -28.0,
+      sunElevationDegrees: 38.0,
+      sunIntensity: 1.45,
+      fogDensity: 0.026,
+      roughness: 0.36,
+    },
+  };
   const PREMIUM_PROFILES = {
     balanced: {
       desktop: { minHit: 7e-6, maxDist: 220.0, maxSteps: 520, mbIters: 20 },
@@ -138,8 +233,17 @@ void main() {
   const MOBILE_DEFAULTS = {
     minHitExponent: -2.4,
     maxDist: 10.0,
-    glowStrength: 0.6,
+    glowStrength: 0.2,
     stepTint: 0.65,
+    exposure: 0.08,
+    contrast: 1.03,
+    saturation: 1.15,
+    sunAzimuthDegrees: 24.0,
+    sunElevationDegrees: 22.0,
+    sunIntensity: 1.12,
+    fogDensity: 0.03,
+    roughness: 0.44,
+    baseColorHex: "#3386FF",
     maxSteps: 96,
     mbIters: 10,
     renderScale: 0.66,
@@ -176,8 +280,19 @@ void main() {
   let minHitValue = Math.pow(10, minHitExponent);
   let modeValue = 1;
   let maxDistValue = 30.0;
-  let glowStrengthValue = 1.0;
-  let stepTintValue = 1.0;
+  let glowStrengthValue = 0.05;
+  let stepTintValue = 0.62;
+  let exposureValue = 0.22;
+  let contrastValue = 1.14;
+  let saturationValue = 1.33;
+  let sunAzimuthDegrees = 32.0;
+  let sunElevationDegrees = 26.0;
+  let sunIntensityValue = 1.28;
+  let fogDensityValue = 0.023;
+  let roughnessValue = 0.3;
+  let baseColorHueDegrees = 220.0;
+  let baseColorHex = "#2D75FF";
+  let baseColorRgb = [45 / 255, 117 / 255, 1.0];
   let maxStepsValue = 300;
   let mbItersValue = 20;
   let lowPowerModeValue = 0;
@@ -608,6 +723,21 @@ void main() {
     maxDistValue = MOBILE_DEFAULTS.maxDist;
     glowStrengthValue = MOBILE_DEFAULTS.glowStrength;
     stepTintValue = MOBILE_DEFAULTS.stepTint;
+    exposureValue = MOBILE_DEFAULTS.exposure;
+    contrastValue = MOBILE_DEFAULTS.contrast;
+    saturationValue = MOBILE_DEFAULTS.saturation;
+    sunAzimuthDegrees = MOBILE_DEFAULTS.sunAzimuthDegrees;
+    sunElevationDegrees = MOBILE_DEFAULTS.sunElevationDegrees;
+    sunIntensityValue = MOBILE_DEFAULTS.sunIntensity;
+    fogDensityValue = MOBILE_DEFAULTS.fogDensity;
+    roughnessValue = MOBILE_DEFAULTS.roughness;
+    baseColorHex = MOBILE_DEFAULTS.baseColorHex.toUpperCase();
+    const mobileBaseRgb = hexToRgbNormalized(baseColorHex);
+    if (mobileBaseRgb) {
+      baseColorHueDegrees = rgbNormalizedToHueDegrees(mobileBaseRgb);
+      baseColorRgb = hsvToRgbNormalized(baseColorHueDegrees, BASE_COLOR_SATURATION, BASE_COLOR_VALUE);
+      baseColorHex = rgbNormalizedToHex(baseColorRgb);
+    }
     maxStepsValue = MOBILE_DEFAULTS.maxSteps;
     mbItersValue = MOBILE_DEFAULTS.mbIters;
     lowPowerModeValue = 1;
@@ -618,6 +748,17 @@ void main() {
     maxDistSlider.value = String(maxDistValue);
     glowSlider.value = String(glowStrengthValue);
     stepTintSlider.value = String(stepTintValue);
+    exposureSlider.value = String(exposureValue);
+    contrastSlider.value = String(contrastValue);
+    saturationSlider.value = String(saturationValue);
+    sunAzimuthSlider.value = String(sunAzimuthDegrees);
+    sunElevationSlider.value = String(sunElevationDegrees);
+    sunIntensitySlider.value = String(sunIntensityValue);
+    fogDensitySlider.value = String(fogDensityValue);
+    roughnessSlider.value = String(roughnessValue);
+    baseHueSlider.value = baseColorHueDegrees.toFixed(0);
+    baseColorValueEl.textContent = baseColorHueDegrees.toFixed(0) + "\u00b0";
+    visualPresetSelect.value = "custom";
   }
 
   function setTouchKeyState(keyCode, pressed) {
@@ -818,6 +959,88 @@ void main() {
     return Math.min(max, Math.max(min, value));
   }
 
+  function hexToRgbNormalized(hexColor) {
+    if (typeof hexColor !== "string") {
+      return null;
+    }
+    const match = /^#([0-9a-fA-F]{6})$/.exec(hexColor.trim());
+    if (!match) {
+      return null;
+    }
+    const value = match[1];
+    const r = parseInt(value.slice(0, 2), 16) / 255;
+    const g = parseInt(value.slice(2, 4), 16) / 255;
+    const b = parseInt(value.slice(4, 6), 16) / 255;
+    return [r, g, b];
+  }
+
+  function rgbNormalizedToHueDegrees(rgb) {
+    const r = clamp(rgb[0], 0.0, 1.0);
+    const g = clamp(rgb[1], 0.0, 1.0);
+    const b = clamp(rgb[2], 0.0, 1.0);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    if (delta < 1e-6) {
+      return baseColorHueDegrees;
+    }
+
+    let hue;
+    if (max === r) {
+      hue = ((g - b) / delta) % 6;
+    } else if (max === g) {
+      hue = (b - r) / delta + 2;
+    } else {
+      hue = (r - g) / delta + 4;
+    }
+
+    hue *= 60;
+    if (hue < 0) {
+      hue += 360;
+    }
+    return hue;
+  }
+
+  function hsvToRgbNormalized(hueDegrees, saturation, value) {
+    const h = ((hueDegrees % 360) + 360) % 360;
+    const s = clamp(saturation, 0.0, 1.0);
+    const v = clamp(value, 0.0, 1.0);
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - c;
+
+    let rgbPrime;
+    if (h < 60) {
+      rgbPrime = [c, x, 0];
+    } else if (h < 120) {
+      rgbPrime = [x, c, 0];
+    } else if (h < 180) {
+      rgbPrime = [0, c, x];
+    } else if (h < 240) {
+      rgbPrime = [0, x, c];
+    } else if (h < 300) {
+      rgbPrime = [x, 0, c];
+    } else {
+      rgbPrime = [c, 0, x];
+    }
+
+    return [rgbPrime[0] + m, rgbPrime[1] + m, rgbPrime[2] + m];
+  }
+
+  function rgbNormalizedToHex(rgb) {
+    const r = Math.round(clamp(rgb[0], 0.0, 1.0) * 255)
+      .toString(16)
+      .padStart(2, "0");
+    const g = Math.round(clamp(rgb[1], 0.0, 1.0) * 255)
+      .toString(16)
+      .padStart(2, "0");
+    const b = Math.round(clamp(rgb[2], 0.0, 1.0) * 255)
+      .toString(16)
+      .padStart(2, "0");
+    return ("#" + r + g + b).toUpperCase();
+  }
+
   function minHitSliderToExponent(sliderValue) {
     const slider = clamp(sliderValue, MIN_HIT_SLIDER_MIN, MIN_HIT_SLIDER_MAX);
     const normalized = (slider - MIN_HIT_SLIDER_MIN) / (MIN_HIT_SLIDER_MAX - MIN_HIT_SLIDER_MIN);
@@ -885,6 +1108,166 @@ void main() {
     stepTintValueEl.textContent = stepTintValue.toFixed(2);
   }
 
+  function updateExposureFromSlider() {
+    const parsed = Number(exposureSlider.value);
+    if (!Number.isFinite(parsed)) {
+      exposureSlider.value = String(exposureValue);
+      exposureValueEl.textContent = exposureValue.toFixed(2);
+      return;
+    }
+
+    exposureValue = clamp(parsed, 0.4, 2.6);
+    exposureValueEl.textContent = exposureValue.toFixed(2);
+  }
+
+  function updateContrastFromSlider() {
+    const parsed = Number(contrastSlider.value);
+    if (!Number.isFinite(parsed)) {
+      contrastSlider.value = String(contrastValue);
+      contrastValueEl.textContent = contrastValue.toFixed(2);
+      return;
+    }
+
+    contrastValue = clamp(parsed, 0.7, 1.7);
+    contrastValueEl.textContent = contrastValue.toFixed(2);
+  }
+
+  function updateSaturationFromSlider() {
+    const parsed = Number(saturationSlider.value);
+    if (!Number.isFinite(parsed)) {
+      saturationSlider.value = String(saturationValue);
+      saturationValueEl.textContent = saturationValue.toFixed(2);
+      return;
+    }
+
+    saturationValue = clamp(parsed, 0.0, 2.0);
+    saturationValueEl.textContent = saturationValue.toFixed(2);
+  }
+
+  function updateSunAzimuthFromSlider() {
+    const parsed = Number(sunAzimuthSlider.value);
+    if (!Number.isFinite(parsed)) {
+      sunAzimuthSlider.value = String(sunAzimuthDegrees);
+      sunAzimuthValueEl.textContent = sunAzimuthDegrees.toFixed(0) + "\u00b0";
+      return;
+    }
+
+    sunAzimuthDegrees = clamp(parsed, -180.0, 180.0);
+    sunAzimuthValueEl.textContent = sunAzimuthDegrees.toFixed(0) + "\u00b0";
+  }
+
+  function updateSunElevationFromSlider() {
+    const parsed = Number(sunElevationSlider.value);
+    if (!Number.isFinite(parsed)) {
+      sunElevationSlider.value = String(sunElevationDegrees);
+      sunElevationValueEl.textContent = sunElevationDegrees.toFixed(0) + "\u00b0";
+      return;
+    }
+
+    sunElevationDegrees = clamp(parsed, 2.0, 88.0);
+    sunElevationValueEl.textContent = sunElevationDegrees.toFixed(0) + "\u00b0";
+  }
+
+  function updateSunIntensityFromSlider() {
+    const parsed = Number(sunIntensitySlider.value);
+    if (!Number.isFinite(parsed)) {
+      sunIntensitySlider.value = String(sunIntensityValue);
+      sunIntensityValueEl.textContent = sunIntensityValue.toFixed(2);
+      return;
+    }
+
+    sunIntensityValue = clamp(parsed, 0.0, 2.8);
+    sunIntensityValueEl.textContent = sunIntensityValue.toFixed(2);
+  }
+
+  function updateFogDensityFromSlider() {
+    const parsed = Number(fogDensitySlider.value);
+    if (!Number.isFinite(parsed)) {
+      fogDensitySlider.value = String(fogDensityValue);
+      fogDensityValueEl.textContent = fogDensityValue.toFixed(3);
+      return;
+    }
+
+    fogDensityValue = clamp(parsed, 0.0, 0.08);
+    fogDensityValueEl.textContent = fogDensityValue.toFixed(3);
+  }
+
+  function updateRoughnessFromSlider() {
+    const parsed = Number(roughnessSlider.value);
+    if (!Number.isFinite(parsed)) {
+      roughnessSlider.value = String(roughnessValue);
+      roughnessValueEl.textContent = roughnessValue.toFixed(2);
+      return;
+    }
+
+    roughnessValue = clamp(parsed, 0.08, 0.95);
+    roughnessValueEl.textContent = roughnessValue.toFixed(2);
+  }
+
+  function updateBaseColorFromInput() {
+    const parsed = Number(baseHueSlider.value);
+    if (!Number.isFinite(parsed)) {
+      baseHueSlider.value = baseColorHueDegrees.toFixed(0);
+      baseColorValueEl.textContent = baseColorHueDegrees.toFixed(0) + "\u00b0";
+      return;
+    }
+
+    baseColorHueDegrees = clamp(parsed, 0.0, 360.0);
+    baseHueSlider.value = baseColorHueDegrees.toFixed(0);
+    baseColorRgb = hsvToRgbNormalized(baseColorHueDegrees, BASE_COLOR_SATURATION, BASE_COLOR_VALUE);
+    baseColorHex = rgbNormalizedToHex(baseColorRgb);
+    baseColorValueEl.textContent = baseColorHueDegrees.toFixed(0) + "\u00b0";
+  }
+
+  function updateVisualControlOutputs() {
+    updateGlowFromSlider();
+    updateStepTintFromSlider();
+    updateExposureFromSlider();
+    updateContrastFromSlider();
+    updateSaturationFromSlider();
+    updateSunAzimuthFromSlider();
+    updateSunElevationFromSlider();
+    updateSunIntensityFromSlider();
+    updateFogDensityFromSlider();
+    updateRoughnessFromSlider();
+    updateBaseColorFromInput();
+  }
+
+  function applyVisualPreset(presetName, persistChoice) {
+    const preset = VISUAL_PRESETS[presetName];
+    if (!preset) {
+      return;
+    }
+
+    glowSlider.value = String(preset.glowStrength);
+    stepTintSlider.value = String(preset.stepTint);
+    exposureSlider.value = String(preset.exposure);
+    contrastSlider.value = String(preset.contrast);
+    saturationSlider.value = String(preset.saturation);
+    sunAzimuthSlider.value = String(preset.sunAzimuthDegrees);
+    sunElevationSlider.value = String(preset.sunElevationDegrees);
+    sunIntensitySlider.value = String(preset.sunIntensity);
+    fogDensitySlider.value = String(preset.fogDensity);
+    roughnessSlider.value = String(preset.roughness);
+    const presetBaseRgb = hexToRgbNormalized(preset.baseColorHex);
+    if (presetBaseRgb) {
+      baseHueSlider.value = String(rgbNormalizedToHueDegrees(presetBaseRgb));
+    }
+    updateVisualControlOutputs();
+
+    visualPresetSelect.value = presetName;
+    if (persistChoice) {
+      localStorage.setItem(VISUAL_PRESET_KEY, presetName);
+    }
+  }
+
+  function setVisualPresetCustom() {
+    if (visualPresetSelect.value !== "custom") {
+      visualPresetSelect.value = "custom";
+      localStorage.setItem(VISUAL_PRESET_KEY, "custom");
+    }
+  }
+
   function updateModeFromInput() {
     const parsed = Number(modeSelect.value);
     if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
@@ -919,6 +1302,11 @@ void main() {
   const storedPreset = localStorage.getItem(PREMIUM_PRESET_KEY);
   if (storedPreset === "ultra" || storedPreset === "balanced") {
     premiumPresetSelect.value = storedPreset;
+  }
+
+  const storedVisualPreset = localStorage.getItem(VISUAL_PRESET_KEY);
+  if (storedVisualPreset && (storedVisualPreset in VISUAL_PRESETS || storedVisualPreset === "custom")) {
+    visualPresetSelect.value = storedVisualPreset;
   }
 
   helpButton.addEventListener("click", openHelp);
@@ -983,6 +1371,48 @@ void main() {
   glowSlider.addEventListener("change", updateGlowFromSlider);
   stepTintSlider.addEventListener("input", updateStepTintFromSlider);
   stepTintSlider.addEventListener("change", updateStepTintFromSlider);
+  exposureSlider.addEventListener("input", updateExposureFromSlider);
+  exposureSlider.addEventListener("change", updateExposureFromSlider);
+  contrastSlider.addEventListener("input", updateContrastFromSlider);
+  contrastSlider.addEventListener("change", updateContrastFromSlider);
+  saturationSlider.addEventListener("input", updateSaturationFromSlider);
+  saturationSlider.addEventListener("change", updateSaturationFromSlider);
+  sunAzimuthSlider.addEventListener("input", updateSunAzimuthFromSlider);
+  sunAzimuthSlider.addEventListener("change", updateSunAzimuthFromSlider);
+  sunElevationSlider.addEventListener("input", updateSunElevationFromSlider);
+  sunElevationSlider.addEventListener("change", updateSunElevationFromSlider);
+  sunIntensitySlider.addEventListener("input", updateSunIntensityFromSlider);
+  sunIntensitySlider.addEventListener("change", updateSunIntensityFromSlider);
+  fogDensitySlider.addEventListener("input", updateFogDensityFromSlider);
+  fogDensitySlider.addEventListener("change", updateFogDensityFromSlider);
+  roughnessSlider.addEventListener("input", updateRoughnessFromSlider);
+  roughnessSlider.addEventListener("change", updateRoughnessFromSlider);
+  const visualCustomInputs = [
+    glowSlider,
+    stepTintSlider,
+    exposureSlider,
+    contrastSlider,
+    saturationSlider,
+    sunAzimuthSlider,
+    sunElevationSlider,
+    sunIntensitySlider,
+    fogDensitySlider,
+    roughnessSlider,
+    baseHueSlider,
+  ];
+  for (let i = 0; i < visualCustomInputs.length; i += 1) {
+    visualCustomInputs[i].addEventListener("input", setVisualPresetCustom);
+  }
+  baseHueSlider.addEventListener("input", updateBaseColorFromInput);
+  baseHueSlider.addEventListener("change", updateBaseColorFromInput);
+  visualPresetSelect.addEventListener("change", function onVisualPresetChange() {
+    const value = visualPresetSelect.value;
+    if (value === "custom") {
+      localStorage.setItem(VISUAL_PRESET_KEY, "custom");
+      return;
+    }
+    applyVisualPreset(value, true);
+  });
   premiumPresetSelect.addEventListener("change", function onPresetChange() {
     localStorage.setItem(PREMIUM_PRESET_KEY, getSelectedPremiumPreset());
   });
@@ -991,8 +1421,12 @@ void main() {
   updateModeFromInput();
   updateMobileFovFromInput();
   updateMaxDistFromSlider();
-  updateGlowFromSlider();
-  updateStepTintFromSlider();
+  updateVisualControlOutputs();
+  if (visualPresetSelect.value in VISUAL_PRESETS) {
+    applyVisualPreset(visualPresetSelect.value, false);
+  } else {
+    visualPresetSelect.value = "custom";
+  }
   setPremiumUnlocked(false);
   initializeMonetization().catch(function onInitMonetizationError(error) {
     showError("Monetization initialization failed.", error);
@@ -1216,6 +1650,15 @@ void main() {
       uMaxDist: gl.getUniformLocation(program, "uMaxDist"),
       uGlowStrength: gl.getUniformLocation(program, "uGlowStrength"),
       uStepTint: gl.getUniformLocation(program, "uStepTint"),
+      uExposure: gl.getUniformLocation(program, "uExposure"),
+      uContrast: gl.getUniformLocation(program, "uContrast"),
+      uSaturation: gl.getUniformLocation(program, "uSaturation"),
+      uSunAzimuth: gl.getUniformLocation(program, "uSunAzimuth"),
+      uSunElevation: gl.getUniformLocation(program, "uSunElevation"),
+      uSunIntensity: gl.getUniformLocation(program, "uSunIntensity"),
+      uFogDensity: gl.getUniformLocation(program, "uFogDensity"),
+      uRoughness: gl.getUniformLocation(program, "uRoughness"),
+      uBaseColor: gl.getUniformLocation(program, "uBaseColor"),
       uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
@@ -1255,6 +1698,33 @@ void main() {
     }
     if (bundle.uStepTint !== null) {
       gl.uniform1f(bundle.uStepTint, stepTintValue);
+    }
+    if (bundle.uExposure !== null) {
+      gl.uniform1f(bundle.uExposure, exposureValue);
+    }
+    if (bundle.uContrast !== null) {
+      gl.uniform1f(bundle.uContrast, contrastValue);
+    }
+    if (bundle.uSaturation !== null) {
+      gl.uniform1f(bundle.uSaturation, saturationValue);
+    }
+    if (bundle.uSunAzimuth !== null) {
+      gl.uniform1f(bundle.uSunAzimuth, (sunAzimuthDegrees * Math.PI) / 180.0);
+    }
+    if (bundle.uSunElevation !== null) {
+      gl.uniform1f(bundle.uSunElevation, (sunElevationDegrees * Math.PI) / 180.0);
+    }
+    if (bundle.uSunIntensity !== null) {
+      gl.uniform1f(bundle.uSunIntensity, sunIntensityValue);
+    }
+    if (bundle.uFogDensity !== null) {
+      gl.uniform1f(bundle.uFogDensity, fogDensityValue);
+    }
+    if (bundle.uRoughness !== null) {
+      gl.uniform1f(bundle.uRoughness, roughnessValue);
+    }
+    if (bundle.uBaseColor !== null) {
+      gl.uniform3f(bundle.uBaseColor, baseColorRgb[0], baseColorRgb[1], baseColorRgb[2]);
     }
     if (bundle.uMaxSteps !== null) {
       gl.uniform1i(bundle.uMaxSteps, maxStepsValue);
@@ -1510,6 +1980,15 @@ void main() {
             uMaxDist: premiumProfile ? premiumProfile.uMaxDist : maxDistValue,
             uGlowStrength: glowStrengthValue,
             uStepTint: stepTintValue,
+            uExposure: exposureValue,
+            uContrast: contrastValue,
+            uSaturation: saturationValue,
+            uSunAzimuth: (sunAzimuthDegrees * Math.PI) / 180.0,
+            uSunElevation: (sunElevationDegrees * Math.PI) / 180.0,
+            uSunIntensity: sunIntensityValue,
+            uFogDensity: fogDensityValue,
+            uRoughness: roughnessValue,
+            uBaseColor: baseColorRgb,
             uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue,
             uMbIters: premiumProfile ? premiumProfile.uMbIters : mbItersValue,
             uLowPowerMode: premiumProfile ? premiumProfile.uLowPowerMode : lowPowerModeValue,

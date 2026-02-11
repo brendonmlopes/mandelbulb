@@ -114,6 +114,8 @@ function setUniform(gl, location, type, value) {
     gl.uniform1f(location, value);
   } else if (type === "1i") {
     gl.uniform1i(location, value);
+  } else if (type === "3f" && Array.isArray(value) && value.length === 3) {
+    gl.uniform3f(location, value[0], value[1], value[2]);
   }
 }
 
@@ -215,6 +217,15 @@ self.onmessage = async function onMessage(event) {
     setUniform(gl, gl.getUniformLocation(program, "uMaxDist"), "1f", uniforms.uMaxDist);
     setUniform(gl, gl.getUniformLocation(program, "uGlowStrength"), "1f", uniforms.uGlowStrength);
     setUniform(gl, gl.getUniformLocation(program, "uStepTint"), "1f", uniforms.uStepTint);
+    setUniform(gl, gl.getUniformLocation(program, "uExposure"), "1f", uniforms.uExposure);
+    setUniform(gl, gl.getUniformLocation(program, "uContrast"), "1f", uniforms.uContrast);
+    setUniform(gl, gl.getUniformLocation(program, "uSaturation"), "1f", uniforms.uSaturation);
+    setUniform(gl, gl.getUniformLocation(program, "uSunAzimuth"), "1f", uniforms.uSunAzimuth);
+    setUniform(gl, gl.getUniformLocation(program, "uSunElevation"), "1f", uniforms.uSunElevation);
+    setUniform(gl, gl.getUniformLocation(program, "uSunIntensity"), "1f", uniforms.uSunIntensity);
+    setUniform(gl, gl.getUniformLocation(program, "uFogDensity"), "1f", uniforms.uFogDensity);
+    setUniform(gl, gl.getUniformLocation(program, "uRoughness"), "1f", uniforms.uRoughness);
+    setUniform(gl, gl.getUniformLocation(program, "uBaseColor"), "3f", uniforms.uBaseColor);
     setUniform(gl, gl.getUniformLocation(program, "uMaxSteps"), "1i", uniforms.uMaxSteps);
     setUniform(gl, gl.getUniformLocation(program, "uMbIters"), "1i", uniforms.uMbIters);
     setUniform(gl, gl.getUniformLocation(program, "uLowPowerMode"), "1i", uniforms.uLowPowerMode);

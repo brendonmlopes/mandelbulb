@@ -582,6 +582,22 @@ body.pointer-look-active #glCanvas {
 .settings-card {
   display: grid;
   gap: 12px;
+  max-height: min(82vh, 760px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.settings-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-card::-webkit-scrollbar-thumb {
+  background: rgba(140, 198, 206, 0.42);
+  border-radius: 999px;
+}
+
+.settings-card::-webkit-scrollbar-track {
+  background: rgba(7, 20, 28, 0.3);
 }
 
 .paywall-card {

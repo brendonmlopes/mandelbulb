@@ -145,6 +145,89 @@
                 </div>
             </label>
 
+            <label class="setting-row" for="visualPresetSelect">
+                <span>Color + lighting preset</span>
+                <select id="visualPresetSelect">
+                    <option value="vibrant">Vibrant Sci-Fi</option>
+                    <option value="cinematic">Cinematic Nebula</option>
+                    <option value="neon">Neon Flux</option>
+                    <option value="solar">Solar Forge</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </label>
+
+            <label class="setting-row" for="baseHueSlider">
+                <span>Base hue</span>
+                <div class="setting-inline">
+                    <input id="baseHueSlider" type="range" min="0" max="360" step="1" value="220">
+                    <output id="baseColorValue" class="setting-value">220°</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="exposureSlider">
+                <span>Exposure</span>
+                <div class="setting-inline">
+                    <input id="exposureSlider" type="range" min="0.4" max="2.6" step="0.01" value="1.15">
+                    <output id="exposureValue" class="setting-value">1.15</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="contrastSlider">
+                <span>Contrast</span>
+                <div class="setting-inline">
+                    <input id="contrastSlider" type="range" min="0.7" max="1.7" step="0.01" value="1.08">
+                    <output id="contrastValue" class="setting-value">1.08</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="saturationSlider">
+                <span>Saturation</span>
+                <div class="setting-inline">
+                    <input id="saturationSlider" type="range" min="0" max="2" step="0.01" value="1.2">
+                    <output id="saturationValue" class="setting-value">1.20</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="sunAzimuthSlider">
+                <span>Sun azimuth</span>
+                <div class="setting-inline">
+                    <input id="sunAzimuthSlider" type="range" min="-180" max="180" step="1" value="32">
+                    <output id="sunAzimuthValue" class="setting-value">32°</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="sunElevationSlider">
+                <span>Sun elevation</span>
+                <div class="setting-inline">
+                    <input id="sunElevationSlider" type="range" min="2" max="88" step="1" value="24">
+                    <output id="sunElevationValue" class="setting-value">24°</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="sunIntensitySlider">
+                <span>Sun intensity</span>
+                <div class="setting-inline">
+                    <input id="sunIntensitySlider" type="range" min="0" max="2.8" step="0.01" value="1.25">
+                    <output id="sunIntensityValue" class="setting-value">1.25</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="fogDensitySlider">
+                <span>Fog density</span>
+                <div class="setting-inline">
+                    <input id="fogDensitySlider" type="range" min="0" max="0.08" step="0.001" value="0.024">
+                    <output id="fogDensityValue" class="setting-value">0.024</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="roughnessSlider">
+                <span>Surface roughness</span>
+                <div class="setting-inline">
+                    <input id="roughnessSlider" type="range" min="0.08" max="0.95" step="0.01" value="0.32">
+                    <output id="roughnessValue" class="setting-value">0.32</output>
+                </div>
+            </label>
+
             <div class="premium-block">
                 <p id="premiumStatusText" class="premium-status">Premium export is locked.</p>
                 <label class="setting-row" for="premiumPresetSelect">
