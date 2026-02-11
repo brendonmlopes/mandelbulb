@@ -114,6 +114,10 @@ void main() {
   const TURN_HINT_KEYCODES = new Set([37, 38, 39, 40]);
   const HINT_FADE_MS = 500;
   const HELP_POINTER_MS = 10000;
+  const MIN_HIT_EXP_MIN = -6.0;
+  const MIN_HIT_EXP_MAX = -2.0;
+  const MIN_HIT_SLIDER_MIN = 0.0;
+  const MIN_HIT_SLIDER_MAX = 10.0;
   const LOOK_SENSITIVITY_DESKTOP = 0.003;
   const LOOK_SENSITIVITY_MOBILE = 0.0045;
   const PREMIUM_UNLOCK_TOKEN_KEY = "mandelbulb_premium_unlock_token";
@@ -610,7 +614,7 @@ void main() {
     renderScaleValue = MOBILE_DEFAULTS.renderScale;
     targetFrameDelta = 1.0 / MOBILE_DEFAULTS.targetFps;
 
-    minHitSlider.value = String(minHitExponent);
+    minHitSlider.value = String(minHitExponentToSlider(minHitExponent));
     maxDistSlider.value = String(maxDistValue);
     glowSlider.value = String(glowStrengthValue);
     stepTintSlider.value = String(stepTintValue);
@@ -814,6 +818,18 @@ void main() {
     return Math.min(max, Math.max(min, value));
   }
 
+  function minHitSliderToExponent(sliderValue) {
+    const slider = clamp(sliderValue, MIN_HIT_SLIDER_MIN, MIN_HIT_SLIDER_MAX);
+    const normalized = (slider - MIN_HIT_SLIDER_MIN) / (MIN_HIT_SLIDER_MAX - MIN_HIT_SLIDER_MIN);
+    return MIN_HIT_EXP_MAX + (MIN_HIT_EXP_MIN - MIN_HIT_EXP_MAX) * normalized;
+  }
+
+  function minHitExponentToSlider(exponentValue) {
+    const exponent = clamp(exponentValue, MIN_HIT_EXP_MIN, MIN_HIT_EXP_MAX);
+    const normalized = (MIN_HIT_EXP_MAX - exponent) / (MIN_HIT_EXP_MAX - MIN_HIT_EXP_MIN);
+    return MIN_HIT_SLIDER_MIN + normalized * (MIN_HIT_SLIDER_MAX - MIN_HIT_SLIDER_MIN);
+  }
+
   function formatScientific(value, digits) {
     return value.toExponential(digits);
   }
@@ -821,12 +837,14 @@ void main() {
   function updateMinHitFromSlider() {
     const parsed = Number(minHitSlider.value);
     if (!Number.isFinite(parsed)) {
-      minHitSlider.value = String(minHitExponent);
+      minHitSlider.value = String(minHitExponentToSlider(minHitExponent));
       minHitValueEl.textContent = formatScientific(minHitValue, 2);
       return;
     }
 
-    minHitExponent = clamp(parsed, -6.0, -2.0);
+    const sliderValue = clamp(parsed, MIN_HIT_SLIDER_MIN, MIN_HIT_SLIDER_MAX);
+    minHitSlider.value = sliderValue.toFixed(2);
+    minHitExponent = minHitSliderToExponent(sliderValue);
     minHitValue = Math.pow(10, minHitExponent);
     minHitValueEl.textContent = formatScientific(minHitValue, 2);
   }
