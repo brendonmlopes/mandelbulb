@@ -107,7 +107,8 @@ body.pointer-look-active #glCanvas {
 .movement-hint[hidden],
 .help-pointer-hint[hidden],
 .mobile-controls[hidden],
-.mobile-fov-control[hidden] {
+.mobile-fov-control[hidden],
+.desktop-speed-control[hidden] {
   display: none !important;
 }
 
@@ -423,6 +424,64 @@ body.pointer-look-active #glCanvas {
 }
 
 .mobile-fov-control output {
+  color: rgba(246, 252, 255, 0.95);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.desktop-speed-control {
+  position: fixed;
+  right: 8px;
+  bottom: 16px;
+  z-index: 18;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 46px;
+  padding: 10px 7px;
+  border: 1px solid rgba(149, 208, 215, 0.62);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(12, 34, 44, 0.82), rgba(8, 22, 31, 0.72));
+  box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.35), 0 8px 18px rgba(2, 8, 12, 0.32);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.desktop-speed-control label {
+  color: rgba(246, 252, 255, 0.92);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.desktop-speed-control input[type="range"] {
+  appearance: none;
+  -webkit-appearance: slider-vertical;
+  width: 18px;
+  height: 124px;
+  margin: 0;
+  background: transparent;
+  writing-mode: bt-lr;
+}
+
+.desktop-speed-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(177, 219, 224, 0.35);
+}
+
+.desktop-speed-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(244, 251, 255, 0.88);
+  background: var(--ui-accent-strong);
+  margin-top: -6px;
+}
+
+.desktop-speed-control output {
   color: rgba(246, 252, 255, 0.95);
   font-size: 10px;
   font-weight: 700;

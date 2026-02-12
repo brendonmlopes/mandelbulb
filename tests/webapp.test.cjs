@@ -88,6 +88,8 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/id=["']visualPresetSelect["']/i);
     expect(html).toMatch(/id=["']baseHueSlider["']/i);
     expect(html).toMatch(/id=["']baseColorValue["']/i);
+    expect(html).toMatch(/id=["']secondaryHueSlider["']/i);
+    expect(html).toMatch(/id=["']secondaryColorValue["']/i);
     expect(html).toMatch(/id=["']exposureSlider["']/i);
     expect(html).toMatch(/id=["']contrastSlider["']/i);
     expect(html).toMatch(/id=["']saturationSlider["']/i);
@@ -158,6 +160,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(workerSource).toContain("uFogDensity");
     expect(workerSource).toContain("uRoughness");
     expect(workerSource).toContain("uBaseColor");
+    expect(workerSource).toContain("uSecondaryColor");
     expect(workerSource).toContain("uMaxSteps");
     expect(workerSource).toContain("uMaxDist");
     expect(workerSource).toContain("uMinHit");
@@ -212,7 +215,7 @@ describe("Mandelbulb web app smoke suite", () => {
       expect(bufferShader).toMatch(new RegExp(`keyDown\\(${code}\\)`));
     }
 
-    expect(bufferShader).toMatch(/fragColor\s*=\s*vec4\(pitch,\s*moveStep,\s*fov,\s*0\.0\)/);
+    expect(bufferShader).toMatch(/fragColor\s*=\s*vec4\(pitch,\s*moveStep,\s*fov,\s*proximityZoom\)/);
   });
 
   test("mainImage shader reads camera state from Buffer A", () => {
@@ -220,7 +223,8 @@ describe("Mandelbulb web app smoke suite", () => {
 
     expect(imageShader).toMatch(/texelFetch\(iChannel0,\s*ivec2\(0,0\),\s*0\)/);
     expect(imageShader).toMatch(/texelFetch\(iChannel0,\s*ivec2\(1,0\),\s*0\)/);
-    expect(imageShader).toMatch(/float\s+FOV\s*=\s*\(uFovOverride\s*>\s*0\.0\)\s*\?\s*uFovOverride\s*:\s*s1\.z/);
+    expect(imageShader).toMatch(/float\s+baseFov\s*=\s*\(uFovOverride\s*>\s*0\.0\)\s*\?\s*uFovOverride\s*:\s*s1\.z/);
+    expect(imageShader).toMatch(/float\s+FOV\s*=\s*baseFov\s*\*\s*\(1\.0\s*\+\s*proximityZoom\s*\*\s*1\.35\)/);
     expect(imageShader).toMatch(/void\s+mainImage\s*\(/);
   });
 
@@ -242,6 +246,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/uniform\s+float\s+uFogDensity\s*;/);
     expect(imageShader).toMatch(/uniform\s+float\s+uRoughness\s*;/);
     expect(imageShader).toMatch(/uniform\s+vec3\s+uBaseColor\s*;/);
+    expect(imageShader).toMatch(/uniform\s+vec3\s+uSecondaryColor\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uMaxSteps\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uMbIters\s*;/);
     expect(imageShader).toMatch(/uniform\s+int\s+uLowPowerMode\s*;/);
@@ -275,10 +280,12 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("uFogDensity");
     expect(source).toContain("uRoughness");
     expect(source).toContain("uBaseColor");
+    expect(source).toContain("uSecondaryColor");
     expect(source).toContain("visualPresetSelect");
     expect(source).toContain("VISUAL_PRESETS");
     expect(source).toContain("applyVisualPreset");
     expect(source).toContain("baseHueSlider");
+    expect(source).toContain("secondaryHueSlider");
     expect(source).toContain("uMaxSteps");
     expect(source).toContain("uMbIters");
     expect(source).toContain("uLowPowerMode");

@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 require("dotenv").config({
   path: path.join(__dirname, ".env"),
   override: false,
@@ -23,6 +24,7 @@ const ADS_ENABLED = String(process.env.ADS_ENABLED || "false") === "true";
 const ADSENSE_CLIENT_ID = process.env.ADSENSE_CLIENT_ID || "";
 const ADSENSE_SLOT_ID = process.env.ADSENSE_SLOT_ID || "";
 const PRICE_LABEL = process.env.PRICE_LABEL || "$3.99";
+const HOT_RELOAD_ENABLED = String(process.env.DEV_HOT_RELOAD || "").toLowerCase() === "true" || process.env.NODE_ENV !== "production";
 
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
@@ -96,6 +98,69 @@ function getPublicConfig() {
   };
 }
 
+function setupDevHotReload() {
+  const clients = new Set();
+  const watchers = [];
+  let debounceTimer = null;
+
+  function broadcastReload() {
+    for (const res of clients) {
+      res.write("data: reload\\n\\n");
+    }
+  }
+
+  function queueReload() {
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(function flushReload() {
+      debounceTimer = null;
+      broadcastReload();
+    }, 120);
+  }
+
+  const watchedFiles = [
+    "index.html",
+    "style.css",
+    "main.js",
+    "bufferA.glsl",
+    "mainImage.glsl",
+    "screenshot-worker.js",
+  ];
+
+  for (const fileName of watchedFiles) {
+    const fullPath = path.join(__dirname, fileName);
+    try {
+      const watcher = fs.watch(fullPath, function onWatchEvent() {
+        queueReload();
+      });
+      watchers.push(watcher);
+    } catch (_error) {
+      // Ignore missing or unwatchable files.
+    }
+  }
+
+  app.get("/__dev/hot-reload", function hotReloadStream(_req, res) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+    res.write("retry: 800\\n\\n");
+    clients.add(res);
+
+    _req.on("close", function onClose() {
+      clients.delete(res);
+      res.end();
+    });
+  });
+
+  process.on("exit", function cleanupWatchers() {
+    for (const watcher of watchers) {
+      watcher.close();
+    }
+  });
+}
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -112,6 +177,10 @@ app.use(
     referrerPolicy: { policy: "no-referrer" },
   })
 );
+
+if (HOT_RELOAD_ENABLED) {
+  setupDevHotReload();
+}
 
 app.post("/api/stripe-webhook", express.raw({ type: "application/json" }), async function webhook(req, res) {
   if (!requireEnvVars(res, ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"])) {

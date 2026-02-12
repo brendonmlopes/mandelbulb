@@ -7,6 +7,12 @@ precision highp float;
 #endif
 
 uniform vec2 uLookDelta;
+uniform float uMoveScale;
+uniform float uMinHit;
+uniform int uMode;
+uniform int uMbIters;
+
+const int MB_ITERS_CAP = 24;
 
 bool keyDown(int key)
 {
@@ -18,6 +24,64 @@ vec3 forwardFromYawPitch(float yaw, float pitch)
     float cy = cos(yaw), sy = sin(yaw);
     float cp = cos(pitch), sp = sin(pitch);
     return normalize(vec3(cy * cp, sp, sy * cp)); // Y up
+}
+
+float mandelbulbDE(vec3 p)
+{
+    float MB_POWER = min(iTime / 10.0, 10.0);
+
+    vec3 z = (uMode == 3) ? sin(p) : p;
+    float dr = 1.0;
+    float r = 0.0;
+
+    for (int i = 0; i < MB_ITERS_CAP; i++)
+    {
+        if (i >= uMbIters) break;
+        r = length(z);
+        if (r > 4.0) break;
+
+        float theta = acos(clamp(z.z / max(r, 1e-8), -1.0, 1.0));
+        float phi = atan(z.y, z.x);
+
+        dr = pow(r, MB_POWER - 1.0) * MB_POWER * dr + 1.0;
+
+        float zr = pow(r, MB_POWER);
+        theta *= MB_POWER;
+        phi *= MB_POWER;
+
+        z = zr * vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+        z += p;
+    }
+
+    return 0.5 * log(r) * r / dr;
+}
+
+float mapScene(vec3 p)
+{
+    if (uMode == 2)
+    {
+        return mandelbulbDE(sin(p));
+    }
+    return mandelbulbDE(p);
+}
+
+float estimateForwardClearance(vec3 pos, vec3 fwd)
+{
+    float t = max(uMinHit * 12.0, 0.01);
+    float hitThreshold = max(uMinHit * 2.5, 0.002);
+
+    for (int i = 0; i < 24; i++)
+    {
+        float d = mapScene(pos + fwd * t);
+        if (d < hitThreshold)
+        {
+            return t;
+        }
+        t += clamp(d, 0.01, 1.6);
+        if (t > 40.0) break;
+    }
+
+    return t;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
@@ -32,7 +96,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float yaw      = s0.w;
     float pitch    = s1.x;
     float moveStep = max(s1.y, 0.01);
-    float fov      = max(s1.z, 0.01);   // <--- NEW
+    float fov      = max(s1.z, 0.01);
+    float proximityZoom = clamp(s1.w, 0.0, 0.85);
 
     if (iFrame == 0 || length(pos) < 1e-6)
     {
@@ -45,7 +110,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         pitch = asin(clamp(dir.y, -1.0, 1.0));
 
         moveStep = 1.0;
-        fov = 1.0;                      // <--- NEW default
+        fov = 1.0;
+        proximityZoom = 0.0;
     }
 
     float dt = max(iTimeDelta, 1.0/240.0);
@@ -78,15 +144,30 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     float fast = keyDown(16) ? 4.0 : 1.0; // Shift
     float baseSpeed = 2.5;
-    float moveSpeed = baseSpeed * moveStep * fast;
+    float moveSpeed = baseSpeed * moveStep * fast * max(uMoveScale, 0.03125);
 
     vec3 fwd = forwardFromYawPitch(yaw, pitch);
     vec3 worldUp = vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(fwd, worldUp));
     vec3 camUp = normalize(cross(right, fwd));
 
-    pos += (fwd * fw + right * rt + camUp * up) * moveSpeed * dt;
+    float clearance = estimateForwardClearance(pos, fwd);
+    float safetyMargin = max(uMinHit * 10.0, 0.0025);
+    vec3 moveDelta = (fwd * fw + right * rt + camUp * up) * moveSpeed * dt;
+
+    float zoomNearDistance = max(safetyMargin * 34.0, 0.8);
+    float nearFactor = 1.0 - smoothstep(safetyMargin, zoomNearDistance, clearance);
+    float zoomTarget = nearFactor * 0.68;
+    if (fw <= 0.0)
+    {
+        zoomTarget *= 0.35;
+    }
+    float zoomResponse = 1.0 - exp(-(fw > 0.0 ? 7.0 : 3.0) * dt);
+    proximityZoom = mix(proximityZoom, zoomTarget, zoomResponse);
+    proximityZoom = clamp(proximityZoom, 0.0, 0.85);
+
+    pos += moveDelta;
 
     if (fc.x == 0) fragColor = vec4(pos, yaw);
-    else           fragColor = vec4(pitch, moveStep, fov, 0.0); // <--- store fov in .z
+    else           fragColor = vec4(pitch, moveStep, fov, proximityZoom);
 }

@@ -24,6 +24,7 @@ uniform float uSunIntensity;
 uniform float uFogDensity;
 uniform float uRoughness;
 uniform vec3 uBaseColor;
+uniform vec3 uSecondaryColor;
 uniform int uMaxSteps;
 uniform int uMbIters;
 uniform int uLowPowerMode;
@@ -178,9 +179,9 @@ vec3 skyColor(vec3 rd, vec3 sunDir)
     vec3 col = mix(horizon, zenith, smoothstep(0.0, 1.0, up));
 
     float sunAmount = max(dot(rd, sunDir), 0.0);
-    vec3 sunCore = vec3(1.35, 1.05, 0.78) * pow(sunAmount, 220.0);
-    vec3 sunGlow = vec3(0.40, 0.72, 1.25) * pow(sunAmount, 8.0);
-    col += (sunCore + sunGlow * 0.12) * uSunIntensity;
+    vec3 sunCore = vec3(1.25, 1.03, 0.84) * pow(sunAmount, 240.0);
+    vec3 sunGlow = vec3(0.30, 0.46, 0.78) * pow(sunAmount, 10.0);
+    col += (sunCore + sunGlow * 0.06) * uSunIntensity;
 
     float horizonPulse = 0.5 + 0.5 * sin(rd.x * 6.0 + iTime * 0.1);
     col += vec3(0.02, 0.04, 0.09) * horizonPulse * (1.0 - up);
@@ -211,7 +212,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
     mat3 cam = makeCamera(ro, ta, 0.0);
 
-    float FOV = (uFovOverride > 0.0) ? uFovOverride : s1.z;
+    float baseFov = (uFovOverride > 0.0) ? uFovOverride : s1.z;
+    float proximityZoom = clamp(s1.w, 0.0, 0.85);
+    float FOV = baseFov * (1.0 + proximityZoom * 1.35);
     vec3 rd = normalize(cam * vec3(uv, FOV));
 
     float t;
@@ -221,6 +224,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     float maxStepsF = max(float(uMaxSteps), 1.0);
     float s = float(stepsUsed) / maxStepsF;
+    float stepDarken = mix(1.0, 0.42, pow(clamp(s, 0.0, 1.0), 0.9));
     vec3 stepCol = 0.5 + 0.5 * cos(6.2831853 * (vec3(0.0, 0.33, 0.67) + exp(-8.0 * s)));
 
     vec3 sunDir = sunDirection(uSunAzimuth, uSunElevation);
@@ -254,14 +258,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
         vec3 orbitPalette = 0.52 + 0.48 * cos(vec3(0.12, 2.05, 4.1) + 0.55 * pHit.xyz + vec3(0.0, 1.2, 2.6));
         vec3 accentPalette = 0.5 + 0.5 * cos(vec3(1.4, 3.2, 5.0) + vec3(0.65, 0.42, 0.84) * pHit.yzx);
-        vec3 stepDrivenColor = mix(uBaseColor, stepCol, 0.42);
+        vec3 dualBase = mix(uBaseColor, uSecondaryColor, clamp(0.12 + 0.88 * s, 0.0, 1.0));
+        vec3 stepDrivenColor = mix(dualBase, stepCol, 0.38);
         vec3 albedo = mix(stepDrivenColor, orbitPalette, 0.25);
         albedo = mix(albedo, accentPalette, 0.25 + 0.25 * sin(0.7 * pHit.y + iTime * 0.05));
         albedo = pow(clamp(albedo, 0.0, 1.0), vec3(0.82));
 
         vec3 F0 = mix(vec3(0.03), albedo, 0.08);
         vec3 F = F0 + (1.0 - F0) * pow(1.0 - VoH, 5.0);
-        vec3 spec = (D * G * F) / max(4.0 * NoL * NoV, 1e-4);
+        vec3 spec = 0.65 * (D * G * F) / max(4.0 * NoL * NoV, 1e-4);
         vec3 kd = (1.0 - F) * (1.0 - 0.08);
         vec3 diffuse = kd * albedo / PI;
 
@@ -280,14 +285,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         ambient *= ao * mix(0.78, 1.0, cavity);
 
         float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-        vec3 rimGlow = vec3(0.26, 0.64, 1.12) * rim * (0.09 + 0.07 * uSunIntensity);
+        vec3 rimGlow = vec3(0.16, 0.25, 0.38) * rim * (0.04 + 0.03 * uSunIntensity);
 
         col = direct + ambient + rimGlow;
 
-        float tintMix = clamp(0.35 + 0.65 * uStepTint, 0.0, 1.0);
-        col = mix(col, stepDrivenColor, 0.2 + tintMix * 0.58);
+        float tintMix = clamp(0.10 + 0.60 * uStepTint, 0.0, 1.0);
+        col = mix(col, stepDrivenColor, 0.06 + tintMix * 0.24);
+        col *= stepDarken;
 
-        col += vec3(0.05, 0.12, 0.22) * exp(-0.11 * t) * uGlowStrength;
+        col += vec3(0.02, 0.04, 0.08) * exp(-0.13 * t) * uGlowStrength;
 
         float fogAmount = 1.0 - exp(-max(uFogDensity, 0.0) * t);
         col = mix(col, background, fogAmount);
@@ -295,6 +301,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     else
     {
         col = mix(col, background + 0.2 * exp(-stepCol), clamp(uStepTint, 0.0, 1.0) * 0.2);
+        col *= stepDarken;
     }
 
     col *= max(uExposure, 0.001);

@@ -157,10 +157,18 @@
             </label>
 
             <label class="setting-row" for="baseHueSlider">
-                <span>Base hue</span>
+                <span>Primary hue</span>
                 <div class="setting-inline">
                     <input id="baseHueSlider" type="range" min="0" max="360" step="1" value="220">
                     <output id="baseColorValue" class="setting-value">220°</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="secondaryHueSlider">
+                <span>Secondary hue</span>
+                <div class="setting-inline">
+                    <input id="secondaryHueSlider" type="range" min="0" max="360" step="1" value="28">
+                    <output id="secondaryColorValue" class="setting-value">28°</output>
                 </div>
             </label>
 
@@ -302,6 +310,12 @@
         <label for="mobileFovSlider">FOV</label>
         <input id="mobileFovSlider" type="range" min="0.35" max="1.2" step="0.01" value="0.6" orient="vertical">
         <output id="mobileFovValue">0.60</output>
+    </div>
+
+    <div id="desktopSpeedControl" class="desktop-speed-control" aria-label="Vertical speed control" hidden>
+        <label for="desktopSpeedSlider">Speed</label>
+        <input id="desktopSpeedSlider" type="range" min="-5" max="5" step="1" value="0" orient="vertical">
+        <output id="desktopSpeedValue">2^0</output>
     </div>
 
     <button id="screenshotButton" class="screenshot-button" type="button" aria-label="Capture screenshot">

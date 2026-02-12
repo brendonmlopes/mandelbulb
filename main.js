@@ -25,6 +25,9 @@
   const mobileFovControl = document.getElementById("mobileFovControl");
   const mobileFovSlider = document.getElementById("mobileFovSlider");
   const mobileFovValue = document.getElementById("mobileFovValue");
+  const desktopSpeedControl = document.getElementById("desktopSpeedControl");
+  const desktopSpeedSlider = document.getElementById("desktopSpeedSlider");
+  const desktopSpeedValue = document.getElementById("desktopSpeedValue");
   const screenshotButton = document.getElementById("screenshotButton");
   const minHitSlider = document.getElementById("minHitSlider");
   const minHitValueEl = document.getElementById("minHitValue");
@@ -54,6 +57,8 @@
   const roughnessValueEl = document.getElementById("roughnessValue");
   const baseHueSlider = document.getElementById("baseHueSlider");
   const baseColorValueEl = document.getElementById("baseColorValue");
+  const secondaryHueSlider = document.getElementById("secondaryHueSlider");
+  const secondaryColorValueEl = document.getElementById("secondaryColorValue");
   const adContainer = document.getElementById("adContainer");
   const adSlot = document.getElementById("adSlot");
   const mobileKeyButtons = Array.from(document.querySelectorAll("[data-touch-keycode]"));
@@ -84,6 +89,9 @@
     !mobileFovControl ||
     !mobileFovSlider ||
     !mobileFovValue ||
+    !desktopSpeedControl ||
+    !desktopSpeedSlider ||
+    !desktopSpeedValue ||
     !screenshotButton ||
     !minHitSlider ||
     !minHitValueEl ||
@@ -113,6 +121,8 @@
     !roughnessValueEl ||
     !baseHueSlider ||
     !baseColorValueEl ||
+    !secondaryHueSlider ||
+    !secondaryColorValueEl ||
     !adContainer ||
     !adSlot ||
     mobileKeyButtons.length === 0 ||
@@ -167,25 +177,27 @@ void main() {
   const VISUAL_PRESET_KEY = "mandelbulb_visual_preset";
   const VISUAL_PRESETS = {
     vibrant: {
-      glowStrength: 0.05,
-      stepTint: 0.62,
+      glowStrength: 0.18,
+      stepTint: 0.32,
       baseColorHex: "#2d75ff",
-      exposure: 0.22,
-      contrast: 1.14,
-      saturation: 1.33,
+      secondaryColorHex: "#ff7f2a",
+      exposure: 1.0,
+      contrast: 1.06,
+      saturation: 1.14,
       sunAzimuthDegrees: 30.0,
       sunElevationDegrees: 26.0,
-      sunIntensity: 1.28,
-      fogDensity: 0.023,
-      roughness: 0.3,
+      sunIntensity: 1.06,
+      fogDensity: 0.03,
+      roughness: 0.42,
     },
     cinematic: {
-      glowStrength: 0.02,
-      stepTint: 0.38,
+      glowStrength: 0.1,
+      stepTint: 0.2,
       baseColorHex: "#4f66b9",
-      exposure: 0.0,
-      contrast: 1.2,
-      saturation: 1.06,
+      secondaryColorHex: "#d08d4a",
+      exposure: 0.92,
+      contrast: 1.1,
+      saturation: 0.98,
       sunAzimuthDegrees: 16.0,
       sunElevationDegrees: 18.0,
       sunIntensity: 1.06,
@@ -193,30 +205,32 @@ void main() {
       roughness: 0.4,
     },
     neon: {
-      glowStrength: 0.32,
-      stepTint: 0.76,
+      glowStrength: 0.3,
+      stepTint: 0.45,
       baseColorHex: "#17d5ff",
-      exposure: 0.3,
-      contrast: 1.1,
-      saturation: 1.55,
+      secondaryColorHex: "#ff3f9b",
+      exposure: 1.02,
+      contrast: 1.08,
+      saturation: 1.28,
       sunAzimuthDegrees: 44.0,
       sunElevationDegrees: 32.0,
       sunIntensity: 1.42,
       fogDensity: 0.018,
-      roughness: 0.22,
+      roughness: 0.32,
     },
     solar: {
-      glowStrength: 0.25,
-      stepTint: 0.5,
+      glowStrength: 0.14,
+      stepTint: 0.28,
       baseColorHex: "#ff6f3c",
-      exposure: 0.15,
-      contrast: 1.09,
-      saturation: 1.25,
+      secondaryColorHex: "#ffc64a",
+      exposure: 0.98,
+      contrast: 1.06,
+      saturation: 1.08,
       sunAzimuthDegrees: -28.0,
       sunElevationDegrees: 38.0,
       sunIntensity: 1.45,
-      fogDensity: 0.026,
-      roughness: 0.36,
+      fogDensity: 0.032,
+      roughness: 0.44,
     },
   };
   const PREMIUM_PROFILES = {
@@ -233,17 +247,18 @@ void main() {
   const MOBILE_DEFAULTS = {
     minHitExponent: -2.4,
     maxDist: 10.0,
-    glowStrength: 0.2,
-    stepTint: 0.65,
-    exposure: 0.08,
+    glowStrength: 0.12,
+    stepTint: 0.28,
+    exposure: 0.95,
     contrast: 1.03,
-    saturation: 1.15,
+    saturation: 1.04,
     sunAzimuthDegrees: 24.0,
     sunElevationDegrees: 22.0,
     sunIntensity: 1.12,
     fogDensity: 0.03,
-    roughness: 0.44,
+    roughness: 0.5,
     baseColorHex: "#3386FF",
+    secondaryColorHex: "#FF9A3A",
     maxSteps: 96,
     mbIters: 10,
     renderScale: 0.66,
@@ -280,19 +295,23 @@ void main() {
   let minHitValue = Math.pow(10, minHitExponent);
   let modeValue = 1;
   let maxDistValue = 30.0;
-  let glowStrengthValue = 0.05;
-  let stepTintValue = 0.62;
-  let exposureValue = 0.22;
-  let contrastValue = 1.14;
-  let saturationValue = 1.33;
+  let moveScaleValue = 1.0;
+  let glowStrengthValue = 0.18;
+  let stepTintValue = 0.32;
+  let exposureValue = 1.0;
+  let contrastValue = 1.06;
+  let saturationValue = 1.14;
   let sunAzimuthDegrees = 32.0;
   let sunElevationDegrees = 26.0;
-  let sunIntensityValue = 1.28;
-  let fogDensityValue = 0.023;
-  let roughnessValue = 0.3;
+  let sunIntensityValue = 1.06;
+  let fogDensityValue = 0.03;
+  let roughnessValue = 0.42;
   let baseColorHueDegrees = 220.0;
   let baseColorHex = "#2D75FF";
   let baseColorRgb = [45 / 255, 117 / 255, 1.0];
+  let secondaryColorHueDegrees = 28.0;
+  let secondaryColorHex = "#FF9A3A";
+  let secondaryColorRgb = [1.0, 154 / 255, 58 / 255];
   let maxStepsValue = 300;
   let mbItersValue = 20;
   let lowPowerModeValue = 0;
@@ -328,6 +347,24 @@ void main() {
     }
     errorBanner.textContent = message;
     errorBanner.hidden = false;
+  }
+
+  function initDevHotReload() {
+    if (typeof EventSource === "undefined") {
+      return;
+    }
+
+    const host = window.location.hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      return;
+    }
+
+    const source = new EventSource("/__dev/hot-reload");
+    source.onmessage = function onHotReloadMessage(event) {
+      if (event && event.data === "reload") {
+        window.location.reload();
+      }
+    };
   }
 
   function setScreenshotBusy(isBusy) {
@@ -689,6 +726,7 @@ void main() {
       movementHintTitle.textContent = "Use WASD to move";
       turnHintTitle.textContent = "Use arrows to turn";
       mobileFovControl.hidden = true;
+      desktopSpeedControl.hidden = false;
       fovOverrideValue = -1.0;
       maxStepsValue = 300;
       mbItersValue = 20;
@@ -717,7 +755,9 @@ void main() {
     movementHintTitle.textContent = "Use left pad to move";
     turnHintTitle.textContent = "Use right pad to turn";
     mobileFovControl.hidden = false;
+    desktopSpeedControl.hidden = true;
     fovOverrideValue = Number(mobileFovSlider.value) || 0.6;
+    moveScaleValue = 1.0;
 
     minHitExponent = MOBILE_DEFAULTS.minHitExponent;
     maxDistValue = MOBILE_DEFAULTS.maxDist;
@@ -737,6 +777,13 @@ void main() {
       baseColorHueDegrees = rgbNormalizedToHueDegrees(mobileBaseRgb);
       baseColorRgb = hsvToRgbNormalized(baseColorHueDegrees, BASE_COLOR_SATURATION, BASE_COLOR_VALUE);
       baseColorHex = rgbNormalizedToHex(baseColorRgb);
+    }
+    secondaryColorHex = MOBILE_DEFAULTS.secondaryColorHex.toUpperCase();
+    const mobileSecondaryRgb = hexToRgbNormalized(secondaryColorHex);
+    if (mobileSecondaryRgb) {
+      secondaryColorHueDegrees = rgbNormalizedToHueDegrees(mobileSecondaryRgb);
+      secondaryColorRgb = hsvToRgbNormalized(secondaryColorHueDegrees, BASE_COLOR_SATURATION, BASE_COLOR_VALUE);
+      secondaryColorHex = rgbNormalizedToHex(secondaryColorRgb);
     }
     maxStepsValue = MOBILE_DEFAULTS.maxSteps;
     mbItersValue = MOBILE_DEFAULTS.mbIters;
@@ -758,6 +805,8 @@ void main() {
     roughnessSlider.value = String(roughnessValue);
     baseHueSlider.value = baseColorHueDegrees.toFixed(0);
     baseColorValueEl.textContent = baseColorHueDegrees.toFixed(0) + "\u00b0";
+    secondaryHueSlider.value = secondaryColorHueDegrees.toFixed(0);
+    secondaryColorValueEl.textContent = secondaryColorHueDegrees.toFixed(0) + "\u00b0";
     visualPresetSelect.value = "custom";
   }
 
@@ -1219,6 +1268,21 @@ void main() {
     baseColorValueEl.textContent = baseColorHueDegrees.toFixed(0) + "\u00b0";
   }
 
+  function updateSecondaryColorFromInput() {
+    const parsed = Number(secondaryHueSlider.value);
+    if (!Number.isFinite(parsed)) {
+      secondaryHueSlider.value = secondaryColorHueDegrees.toFixed(0);
+      secondaryColorValueEl.textContent = secondaryColorHueDegrees.toFixed(0) + "\u00b0";
+      return;
+    }
+
+    secondaryColorHueDegrees = clamp(parsed, 0.0, 360.0);
+    secondaryHueSlider.value = secondaryColorHueDegrees.toFixed(0);
+    secondaryColorRgb = hsvToRgbNormalized(secondaryColorHueDegrees, BASE_COLOR_SATURATION, BASE_COLOR_VALUE);
+    secondaryColorHex = rgbNormalizedToHex(secondaryColorRgb);
+    secondaryColorValueEl.textContent = secondaryColorHueDegrees.toFixed(0) + "\u00b0";
+  }
+
   function updateVisualControlOutputs() {
     updateGlowFromSlider();
     updateStepTintFromSlider();
@@ -1231,6 +1295,7 @@ void main() {
     updateFogDensityFromSlider();
     updateRoughnessFromSlider();
     updateBaseColorFromInput();
+    updateSecondaryColorFromInput();
   }
 
   function applyVisualPreset(presetName, persistChoice) {
@@ -1252,6 +1317,10 @@ void main() {
     const presetBaseRgb = hexToRgbNormalized(preset.baseColorHex);
     if (presetBaseRgb) {
       baseHueSlider.value = String(rgbNormalizedToHueDegrees(presetBaseRgb));
+    }
+    const presetSecondaryRgb = hexToRgbNormalized(preset.secondaryColorHex);
+    if (presetSecondaryRgb) {
+      secondaryHueSlider.value = String(rgbNormalizedToHueDegrees(presetSecondaryRgb));
     }
     updateVisualControlOutputs();
 
@@ -1287,6 +1356,21 @@ void main() {
     mobileFovSlider.value = clamped.toFixed(2);
     mobileFovValue.textContent = clamped.toFixed(2);
     fovOverrideValue = isMobileClient ? clamped : -1.0;
+  }
+
+  function updateDesktopSpeedFromInput() {
+    const parsed = Number(desktopSpeedSlider.value);
+    if (!Number.isFinite(parsed)) {
+      desktopSpeedSlider.value = "0";
+      moveScaleValue = 1.0;
+      desktopSpeedValue.textContent = "2^0";
+      return;
+    }
+
+    const exponent = clamp(Math.round(parsed), -5, 5);
+    desktopSpeedSlider.value = String(exponent);
+    moveScaleValue = Math.pow(2, exponent);
+    desktopSpeedValue.textContent = "2^" + String(exponent);
   }
 
   function syncMobileFovValue() {
@@ -1365,6 +1449,8 @@ void main() {
   modeSelect.addEventListener("change", updateModeFromInput);
   mobileFovSlider.addEventListener("input", updateMobileFovFromInput);
   mobileFovSlider.addEventListener("change", updateMobileFovFromInput);
+  desktopSpeedSlider.addEventListener("input", updateDesktopSpeedFromInput);
+  desktopSpeedSlider.addEventListener("change", updateDesktopSpeedFromInput);
   maxDistSlider.addEventListener("input", updateMaxDistFromSlider);
   maxDistSlider.addEventListener("change", updateMaxDistFromSlider);
   glowSlider.addEventListener("input", updateGlowFromSlider);
@@ -1399,12 +1485,15 @@ void main() {
     fogDensitySlider,
     roughnessSlider,
     baseHueSlider,
+    secondaryHueSlider,
   ];
   for (let i = 0; i < visualCustomInputs.length; i += 1) {
     visualCustomInputs[i].addEventListener("input", setVisualPresetCustom);
   }
   baseHueSlider.addEventListener("input", updateBaseColorFromInput);
   baseHueSlider.addEventListener("change", updateBaseColorFromInput);
+  secondaryHueSlider.addEventListener("input", updateSecondaryColorFromInput);
+  secondaryHueSlider.addEventListener("change", updateSecondaryColorFromInput);
   visualPresetSelect.addEventListener("change", function onVisualPresetChange() {
     const value = visualPresetSelect.value;
     if (value === "custom") {
@@ -1420,6 +1509,7 @@ void main() {
   updateMinHitFromSlider();
   updateModeFromInput();
   updateMobileFovFromInput();
+  updateDesktopSpeedFromInput();
   updateMaxDistFromSlider();
   updateVisualControlOutputs();
   if (visualPresetSelect.value in VISUAL_PRESETS) {
@@ -1431,6 +1521,7 @@ void main() {
   initializeMonetization().catch(function onInitMonetizationError(error) {
     showError("Monetization initialization failed.", error);
   });
+  initDevHotReload();
 
   window.addEventListener("keydown", function onKeyDown(event) {
     if (event.key === "Escape" && isAnyModalOpen()) {
@@ -1648,6 +1739,7 @@ void main() {
       uEps: gl.getUniformLocation(program, "uEps"),
       uMode: gl.getUniformLocation(program, "uMode"),
       uMaxDist: gl.getUniformLocation(program, "uMaxDist"),
+      uMoveScale: gl.getUniformLocation(program, "uMoveScale"),
       uGlowStrength: gl.getUniformLocation(program, "uGlowStrength"),
       uStepTint: gl.getUniformLocation(program, "uStepTint"),
       uExposure: gl.getUniformLocation(program, "uExposure"),
@@ -1659,6 +1751,7 @@ void main() {
       uFogDensity: gl.getUniformLocation(program, "uFogDensity"),
       uRoughness: gl.getUniformLocation(program, "uRoughness"),
       uBaseColor: gl.getUniformLocation(program, "uBaseColor"),
+      uSecondaryColor: gl.getUniformLocation(program, "uSecondaryColor"),
       uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
@@ -1693,6 +1786,9 @@ void main() {
     if (bundle.uMaxDist !== null) {
       gl.uniform1f(bundle.uMaxDist, maxDistValue);
     }
+    if (bundle.uMoveScale !== null) {
+      gl.uniform1f(bundle.uMoveScale, moveScaleValue);
+    }
     if (bundle.uGlowStrength !== null) {
       gl.uniform1f(bundle.uGlowStrength, glowStrengthValue);
     }
@@ -1725,6 +1821,9 @@ void main() {
     }
     if (bundle.uBaseColor !== null) {
       gl.uniform3f(bundle.uBaseColor, baseColorRgb[0], baseColorRgb[1], baseColorRgb[2]);
+    }
+    if (bundle.uSecondaryColor !== null) {
+      gl.uniform3f(bundle.uSecondaryColor, secondaryColorRgb[0], secondaryColorRgb[1], secondaryColorRgb[2]);
     }
     if (bundle.uMaxSteps !== null) {
       gl.uniform1i(bundle.uMaxSteps, maxStepsValue);
@@ -1989,6 +2088,7 @@ void main() {
             uFogDensity: fogDensityValue,
             uRoughness: roughnessValue,
             uBaseColor: baseColorRgb,
+            uSecondaryColor: secondaryColorRgb,
             uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue,
             uMbIters: premiumProfile ? premiumProfile.uMbIters : mbItersValue,
             uLowPowerMode: premiumProfile ? premiumProfile.uLowPowerMode : lowPowerModeValue,

@@ -226,6 +226,7 @@ self.onmessage = async function onMessage(event) {
     setUniform(gl, gl.getUniformLocation(program, "uFogDensity"), "1f", uniforms.uFogDensity);
     setUniform(gl, gl.getUniformLocation(program, "uRoughness"), "1f", uniforms.uRoughness);
     setUniform(gl, gl.getUniformLocation(program, "uBaseColor"), "3f", uniforms.uBaseColor);
+    setUniform(gl, gl.getUniformLocation(program, "uSecondaryColor"), "3f", uniforms.uSecondaryColor);
     setUniform(gl, gl.getUniformLocation(program, "uMaxSteps"), "1i", uniforms.uMaxSteps);
     setUniform(gl, gl.getUniformLocation(program, "uMbIters"), "1i", uniforms.uMbIters);
     setUniform(gl, gl.getUniformLocation(program, "uLowPowerMode"), "1i", uniforms.uLowPowerMode);
