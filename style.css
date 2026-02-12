@@ -611,6 +611,29 @@ body.pointer-look-active #glCanvas {
   transition: transform 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
+.overlay-icon-button {
+  z-index: 20;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(120deg, rgba(8, 25, 35, 0.88), rgba(15, 38, 51, 0.8));
+  color: var(--ui-text);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
+  transition: transform 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.overlay-icon-button svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
 .screenshot-button {
   position: fixed;
   left: 8px;
@@ -696,7 +719,14 @@ body.pointer-look-active #glCanvas {
   color: #f5fdff;
 }
 
+.overlay-icon-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--ui-accent);
+  color: #f5fdff;
+}
+
 .overlay-button:focus-visible,
+.overlay-icon-button:focus-visible,
 .close-button:focus-visible {
   outline: 2px solid var(--ui-accent-strong);
   outline-offset: 2px;
@@ -1046,6 +1076,11 @@ body.pointer-look-active #glCanvas {
 
   .overlay-button {
     padding: 9px 13px;
+  }
+
+  .overlay-icon-button {
+    width: 38px;
+    height: 38px;
   }
 
   .help-dialog {

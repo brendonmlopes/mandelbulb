@@ -19,6 +19,7 @@
   const closeHelpButton = document.getElementById("closeHelpButton");
   const closeSettingsButton = document.getElementById("closeSettingsButton");
   const hudToggleButton = document.getElementById("hudToggleButton");
+  const resetPositionButton = document.getElementById("resetPositionButton");
   const statsOverlay = document.getElementById("statsOverlay");
   const statsPosition = document.getElementById("statsPosition");
   const statsFps = document.getElementById("statsFps");
@@ -96,6 +97,7 @@
     !helpButton ||
     !settingsButton ||
     !hudToggleButton ||
+    !resetPositionButton ||
     !statsOverlay ||
     !statsPosition ||
     !statsFps ||
@@ -374,6 +376,7 @@ void main() {
   let previewRenderScale = 1.0;
   let sceneStarted = false;
   let stopStartPreview = function stopPreviewNoop() {};
+  let pendingCameraReset = false;
 
   function showError(message, detail) {
     if (detail) {
@@ -1593,6 +1596,9 @@ void main() {
   hudToggleButton.addEventListener("click", function onHudToggle() {
     setStatsOverlayVisible(statsOverlay.hidden);
   });
+  resetPositionButton.addEventListener("click", function onResetPositionClick() {
+    pendingCameraReset = true;
+  });
   document.addEventListener("contextmenu", suppressLongPressUi);
   document.addEventListener("selectstart", suppressLongPressUi);
   document.addEventListener("dragstart", suppressLongPressUi);
@@ -1962,6 +1968,7 @@ void main() {
       uMode: gl.getUniformLocation(program, "uMode"),
       uMaxDist: gl.getUniformLocation(program, "uMaxDist"),
       uMoveScale: gl.getUniformLocation(program, "uMoveScale"),
+      uResetCamera: gl.getUniformLocation(program, "uResetCamera"),
       uGlowStrength: gl.getUniformLocation(program, "uGlowStrength"),
       uStepTint: gl.getUniformLocation(program, "uStepTint"),
       uExposure: gl.getUniformLocation(program, "uExposure"),
@@ -1985,7 +1992,7 @@ void main() {
     };
   }
 
-  function setUniforms(gl, bundle, width, height, time, delta, frame, lookYawDelta, lookPitchDelta) {
+  function setUniforms(gl, bundle, width, height, time, delta, frame, lookYawDelta, lookPitchDelta, resetCamera) {
     if (bundle.iResolution !== null) {
       gl.uniform3f(bundle.iResolution, width, height, 1.0);
     }
@@ -2012,6 +2019,9 @@ void main() {
     }
     if (bundle.uMoveScale !== null) {
       gl.uniform1f(bundle.uMoveScale, moveScaleValue);
+    }
+    if (bundle.uResetCamera !== null) {
+      gl.uniform1f(bundle.uResetCamera, resetCamera ? 1.0 : 0.0);
     }
     if (bundle.uGlowStrength !== null) {
       gl.uniform1f(bundle.uGlowStrength, glowStrengthValue);
@@ -2272,9 +2282,10 @@ void main() {
     gl.disable(gl.DEPTH_TEST);
 
     let frame = 0;
-    let lastTime = performance.now() * 0.001;
-    let lastPresentTime = lastTime;
-    let currentTimeSec = lastTime;
+    const sceneStartTimeSec = performance.now() * 0.001;
+    let lastTime = sceneStartTimeSec;
+    let lastPresentTime = sceneStartTimeSec;
+    let currentTimeSec = 0.0;
     let fpsSmoothed = 60.0;
     let lastStatsSampleTime = 0.0;
     const stateStatsPixels = new Float32Array(STATE_WIDTH * STATE_HEIGHT * 4);
@@ -2384,6 +2395,7 @@ void main() {
 
     function render(nowMillis) {
       const now = nowMillis * 0.001;
+      const sceneTime = Math.max(0.0, now - sceneStartTimeSec);
       if (targetFrameDelta > 0.0 && now - lastPresentTime < targetFrameDelta) {
         requestAnimationFrame(render);
         return;
@@ -2392,7 +2404,7 @@ void main() {
       const delta = Math.max(1.0 / 240.0, Math.min(0.25, now - lastTime));
       lastTime = now;
       lastPresentTime = now;
-      currentTimeSec = now;
+      currentTimeSec = sceneTime;
 
       syncMobileFovValue();
       const lookYawDelta = pendingLookYawDelta;
@@ -2402,11 +2414,24 @@ void main() {
 
       resizeCanvasToDisplaySize(gl, canvas);
       updateKeyboardTexture(gl, keyboardTexture);
+      const resetNow = pendingCameraReset;
+      pendingCameraReset = false;
 
       gl.useProgram(bufferProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeState.framebuffer);
       gl.viewport(0, 0, STATE_WIDTH, STATE_HEIGHT);
-      setUniforms(gl, bufferUniforms, STATE_WIDTH, STATE_HEIGHT, now, delta, frame, lookYawDelta, lookPitchDelta);
+      setUniforms(
+        gl,
+        bufferUniforms,
+        STATE_WIDTH,
+        STATE_HEIGHT,
+        sceneTime,
+        delta,
+        frame,
+        lookYawDelta,
+        lookPitchDelta,
+        resetNow
+      );
       bindTextureAt(gl, 0, readState.texture, bufferUniforms.channels[0]);
       bindTextureAt(gl, 1, keyboardTexture, bufferUniforms.channels[1]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -2414,7 +2439,7 @@ void main() {
       gl.useProgram(imageProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      setUniforms(gl, imageUniforms, canvas.width, canvas.height, now, delta, frame, 0.0, 0.0);
+      setUniforms(gl, imageUniforms, canvas.width, canvas.height, sceneTime, delta, frame, 0.0, 0.0, false);
       bindTextureAt(gl, 0, writeState.texture, imageUniforms.channels[0]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 

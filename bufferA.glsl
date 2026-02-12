@@ -8,6 +8,7 @@ precision highp float;
 
 uniform vec2 uLookDelta;
 uniform float uMoveScale;
+uniform float uResetCamera;
 uniform float uMinHit;
 uniform int uMode;
 uniform int uMbIters;
@@ -99,7 +100,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float fov      = max(s1.z, 0.01);
     float proximityZoom = clamp(s1.w, 0.0, 0.85);
 
-    if (iFrame == 0 || length(pos) < 1e-6)
+    if (iFrame == 0 || length(pos) < 1e-6 || uResetCamera > 0.5)
     {
         pos = vec3(1.0, 2.0, 2.0);
 
