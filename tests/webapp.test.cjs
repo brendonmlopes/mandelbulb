@@ -43,6 +43,14 @@ describe("Mandelbulb web app smoke suite", () => {
     const html = readProjectFile("index.html");
 
     expect(html).toMatch(/<canvas[^>]*id=["']glCanvas["']/i);
+    expect(html).toMatch(/id=["']startScreen["']/i);
+    expect(html).toMatch(/id=["']startPreviewCanvas["']/i);
+    expect(html).toMatch(/id=["']startPreviewFps["']/i);
+    expect(html).toMatch(/id=["']startResolutionSlider["']/i);
+    expect(html).toMatch(/id=["']renderScaleSlider["']/i);
+    expect(html).toMatch(/id=["']renderScaleValue["']/i);
+    expect(html).toMatch(/id=["']startFractalButton["']/i);
+    expect(html).toMatch(/Start\s+fractal/i);
     expect(html).toMatch(/rel=["']icon["'][^>]*href=["']\.\/favicon\.svg["']/i);
     expect(html).toMatch(/class=["'][^"']*social-links[^"']*["']/i);
     expect(html).toMatch(/href=["']https:\/\/x\.com\/stack_overchill["']/i);
@@ -71,6 +79,12 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/data-touch-keycode=["']69["']/i);
     expect(html).toMatch(/id=["']helpButton["']/i);
     expect(html).toMatch(/id=["']settingsButton["']/i);
+    expect(html).toMatch(/id=["']hudToggleButton["']/i);
+    expect(html).toMatch(/id=["']statsOverlay["']/i);
+    expect(html).toMatch(/id=["']statsPosition["']/i);
+    expect(html).toMatch(/id=["']statsFps["']/i);
+    expect(html).toMatch(/id=["']statsSpeed["']/i);
+    expect(html).toMatch(/id=["']statsZoom["']/i);
     expect(html).toMatch(/id=["']helpDialog["']/i);
     expect(html).toMatch(/id=["']settingsDialog["']/i);
     expect(html).toMatch(/id=["']paywallDialog["']/i);
@@ -144,6 +158,14 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("shouldShowAdContainer");
     expect(source).toContain("screenshotInProgress || isAnyModalOpen()");
     expect(source).toContain("WATERMARK_TEXT");
+    expect(source).toContain("startPreviewCanvas");
+    expect(source).toContain("initStartPreview");
+    expect(source).toContain("startFractalButton");
+    expect(source).toContain("setRuntimeUiVisible");
+    expect(source).toContain("statsOverlay");
+    expect(source).toContain("updateStatsOverlay");
+    expect(source).toContain("renderScaleSlider");
+    expect(source).toContain("updateRenderScaleFromSlider");
   });
 
   test("screenshot worker file is wired for hi-res rendering", () => {

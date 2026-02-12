@@ -2,15 +2,28 @@
   "use strict";
 
   const canvas = document.getElementById("glCanvas");
+  const startScreen = document.getElementById("startScreen");
+  const startPreviewCanvas = document.getElementById("startPreviewCanvas");
+  const startPreviewFps = document.getElementById("startPreviewFps");
+  const startResolutionSlider = document.getElementById("startResolutionSlider");
+  const startResolutionValue = document.getElementById("startResolutionValue");
+  const startFractalButton = document.getElementById("startFractalButton");
   const movementHint = document.getElementById("movementHint");
   const movementHintTitle = document.getElementById("movementHintTitle");
   const turnHint = document.getElementById("turnHint");
   const turnHintTitle = document.getElementById("turnHintTitle");
   const helpPointerHint = document.getElementById("helpPointerHint");
+  const overlayControls = document.querySelector(".overlay-controls");
   const helpButton = document.getElementById("helpButton");
   const settingsButton = document.getElementById("settingsButton");
   const closeHelpButton = document.getElementById("closeHelpButton");
   const closeSettingsButton = document.getElementById("closeSettingsButton");
+  const hudToggleButton = document.getElementById("hudToggleButton");
+  const statsOverlay = document.getElementById("statsOverlay");
+  const statsPosition = document.getElementById("statsPosition");
+  const statsFps = document.getElementById("statsFps");
+  const statsSpeed = document.getElementById("statsSpeed");
+  const statsZoom = document.getElementById("statsZoom");
   const closePaywallButton = document.getElementById("closePaywallButton");
   const helpDialog = document.getElementById("helpDialog");
   const helpDesktopContent = document.getElementById("helpDesktopContent");
@@ -29,6 +42,8 @@
   const desktopSpeedSlider = document.getElementById("desktopSpeedSlider");
   const desktopSpeedValue = document.getElementById("desktopSpeedValue");
   const screenshotButton = document.getElementById("screenshotButton");
+  const renderScaleSlider = document.getElementById("renderScaleSlider");
+  const renderScaleValueEl = document.getElementById("renderScaleValue");
   const minHitSlider = document.getElementById("minHitSlider");
   const minHitValueEl = document.getElementById("minHitValue");
   const modeSelect = document.getElementById("modeSelect");
@@ -66,13 +81,26 @@
 
   if (
     !canvas ||
+    !startScreen ||
+    !startPreviewCanvas ||
+    !startPreviewFps ||
+    !startResolutionSlider ||
+    !startResolutionValue ||
+    !startFractalButton ||
     !movementHint ||
     !movementHintTitle ||
     !turnHint ||
     !turnHintTitle ||
     !helpPointerHint ||
+    !overlayControls ||
     !helpButton ||
     !settingsButton ||
+    !hudToggleButton ||
+    !statsOverlay ||
+    !statsPosition ||
+    !statsFps ||
+    !statsSpeed ||
+    !statsZoom ||
     !closeHelpButton ||
     !closeSettingsButton ||
     !closePaywallButton ||
@@ -93,6 +121,8 @@
     !desktopSpeedSlider ||
     !desktopSpeedValue ||
     !screenshotButton ||
+    !renderScaleSlider ||
+    !renderScaleValueEl ||
     !minHitSlider ||
     !minHitValueEl ||
     !modeSelect ||
@@ -175,6 +205,7 @@ void main() {
   const CHECKOUT_SUCCESS_KEY = "checkout";
   const CHECKOUT_SESSION_ID_KEY = "session_id";
   const VISUAL_PRESET_KEY = "mandelbulb_visual_preset";
+  const HUD_VISIBLE_KEY = "mandelbulb_hud_visible";
   const VISUAL_PRESETS = {
     vibrant: {
       glowStrength: 0.18,
@@ -340,6 +371,9 @@ void main() {
   let lastLookClientY = 0;
   let pendingLookYawDelta = 0.0;
   let pendingLookPitchDelta = 0.0;
+  let previewRenderScale = 1.0;
+  let sceneStarted = false;
+  let stopStartPreview = function stopPreviewNoop() {};
 
   function showError(message, detail) {
     if (detail) {
@@ -363,6 +397,161 @@ void main() {
     source.onmessage = function onHotReloadMessage(event) {
       if (event && event.data === "reload") {
         window.location.reload();
+      }
+    };
+  }
+
+  function setRuntimeUiVisible(visible) {
+    movementHint.hidden = !visible || isMobileClient;
+    turnHint.hidden = true;
+    helpPointerHint.hidden = true;
+    screenshotButton.hidden = !visible;
+    overlayControls.hidden = !visible;
+    if (isMobileClient) {
+      mobileControls.hidden = !visible;
+      mobileFovControl.hidden = !visible;
+      desktopSpeedControl.hidden = true;
+    } else {
+      mobileControls.hidden = true;
+      mobileFovControl.hidden = true;
+      desktopSpeedControl.hidden = !visible;
+    }
+  }
+
+  function updateStartResolutionFromInput() {
+    const parsed = Number(startResolutionSlider.value);
+    if (!Number.isFinite(parsed)) {
+      startResolutionSlider.value = previewRenderScale.toFixed(2);
+      startResolutionValue.textContent = previewRenderScale.toFixed(2) + "x";
+      return;
+    }
+
+    previewRenderScale = clamp(parsed, 0.5, 1.5);
+    startResolutionSlider.value = previewRenderScale.toFixed(2);
+    startResolutionValue.textContent = previewRenderScale.toFixed(2) + "x";
+    renderScaleSlider.value = previewRenderScale.toFixed(2);
+    renderScaleValueEl.textContent = previewRenderScale.toFixed(2) + "x";
+  }
+
+  function updateRenderScaleFromSlider() {
+    const parsed = Number(renderScaleSlider.value);
+    if (!Number.isFinite(parsed)) {
+      renderScaleSlider.value = renderScaleValue.toFixed(2);
+      renderScaleValueEl.textContent = renderScaleValue.toFixed(2) + "x";
+      return;
+    }
+
+    renderScaleValue = clamp(parsed, 0.5, 1.5);
+    renderScaleSlider.value = renderScaleValue.toFixed(2);
+    renderScaleValueEl.textContent = renderScaleValue.toFixed(2) + "x";
+  }
+
+  function setStatsOverlayVisible(visible) {
+    statsOverlay.hidden = !visible;
+    localStorage.setItem(HUD_VISIBLE_KEY, visible ? "true" : "false");
+  }
+
+  function initStartPreview() {
+    const ctx = startPreviewCanvas.getContext("2d");
+    if (!ctx) {
+      return function stopPreviewNoop() {};
+    }
+
+    let rafId = 0;
+    let lastFrameSec = performance.now() * 0.001;
+    let fpsSmoothed = 60.0;
+
+    function projectPoint(x, y, z, t, scale, cx, cy) {
+      const wobble = 0.25 * Math.sin(t * 0.5 + x * 0.4);
+      const px = cx + (x - y) * scale * 0.68;
+      const py = cy + (x + y) * scale * 0.3 - z * scale * (1.15 + wobble);
+      return [px, py];
+    }
+
+    function draw(nowMillis) {
+      const nowSec = nowMillis * 0.001;
+      const dt = Math.max(1.0 / 240.0, nowSec - lastFrameSec);
+      lastFrameSec = nowSec;
+      const fpsCurrent = 1.0 / dt;
+      fpsSmoothed = fpsSmoothed * 0.9 + fpsCurrent * 0.1;
+
+      const cssWidth = Math.max(180, startPreviewCanvas.clientWidth || 360);
+      const cssHeight = Math.max(120, startPreviewCanvas.clientHeight || 220);
+      const scaledWidth = Math.max(80, Math.round(cssWidth * previewRenderScale));
+      const scaledHeight = Math.max(60, Math.round(cssHeight * previewRenderScale));
+      if (startPreviewCanvas.width !== scaledWidth || startPreviewCanvas.height !== scaledHeight) {
+        startPreviewCanvas.width = scaledWidth;
+        startPreviewCanvas.height = scaledHeight;
+      }
+
+      const width = startPreviewCanvas.width;
+      const height = startPreviewCanvas.height;
+      const cx = width * 0.5;
+      const cy = height * 0.58;
+      const scale = Math.min(width, height) * 0.16;
+
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+      bgGradient.addColorStop(0, "rgba(10, 30, 44, 1)");
+      bgGradient.addColorStop(1, "rgba(7, 17, 24, 1)");
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, width, height);
+
+      const time = nowSec;
+      const gridMin = -4.2;
+      const gridMax = 4.2;
+      const steps = Math.max(14, Math.round(14 + 16 * previewRenderScale));
+      ctx.lineWidth = 1.1;
+
+      for (let yi = 0; yi <= steps; yi += 1) {
+        const y = gridMin + (gridMax - gridMin) * (yi / steps);
+        ctx.beginPath();
+        for (let xi = 0; xi <= steps; xi += 1) {
+          const x = gridMin + (gridMax - gridMin) * (xi / steps);
+          const z = Math.sin(x + time) * Math.cos(y + time);
+          const point = projectPoint(x, y, z, time, scale, cx, cy);
+          if (xi === 0) {
+            ctx.moveTo(point[0], point[1]);
+          } else {
+            ctx.lineTo(point[0], point[1]);
+          }
+        }
+        ctx.strokeStyle = "rgba(95, 196, 255, 0.55)";
+        ctx.stroke();
+      }
+
+      for (let xi = 0; xi <= steps; xi += 1) {
+        const x = gridMin + (gridMax - gridMin) * (xi / steps);
+        ctx.beginPath();
+        for (let yi = 0; yi <= steps; yi += 1) {
+          const y = gridMin + (gridMax - gridMin) * (yi / steps);
+          const z = Math.sin(x + time) * Math.cos(y + time);
+          const point = projectPoint(x, y, z, time, scale, cx, cy);
+          if (yi === 0) {
+            ctx.moveTo(point[0], point[1]);
+          } else {
+            ctx.lineTo(point[0], point[1]);
+          }
+        }
+        ctx.strokeStyle = "rgba(255, 183, 105, 0.42)";
+        ctx.stroke();
+      }
+
+      startPreviewFps.textContent = fpsSmoothed.toFixed(1);
+      if (fpsSmoothed >= 50) {
+        startPreviewFps.style.color = "#98f1b3";
+      } else if (fpsSmoothed >= 30) {
+        startPreviewFps.style.color = "#ffd388";
+      } else {
+        startPreviewFps.style.color = "#ff9f96";
+      }
+
+      rafId = requestAnimationFrame(draw);
+    }
+
+    rafId = requestAnimationFrame(draw);
+    return function stopPreview() {
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
       }
     };
   }
@@ -733,6 +922,8 @@ void main() {
       lowPowerModeValue = 0;
       renderScaleValue = 1.0;
       targetFrameDelta = 0.0;
+      renderScaleSlider.value = renderScaleValue.toFixed(2);
+      renderScaleValueEl.textContent = renderScaleValue.toFixed(2) + "x";
       return;
     }
 
@@ -790,6 +981,8 @@ void main() {
     lowPowerModeValue = 1;
     renderScaleValue = MOBILE_DEFAULTS.renderScale;
     targetFrameDelta = 1.0 / MOBILE_DEFAULTS.targetFps;
+    renderScaleSlider.value = renderScaleValue.toFixed(2);
+    renderScaleValueEl.textContent = renderScaleValue.toFixed(2) + "x";
 
     minHitSlider.value = String(minHitExponentToSlider(minHitExponent));
     maxDistSlider.value = String(maxDistValue);
@@ -1393,7 +1586,13 @@ void main() {
     visualPresetSelect.value = storedVisualPreset;
   }
 
+  const storedHudVisible = localStorage.getItem(HUD_VISIBLE_KEY);
+  setStatsOverlayVisible(storedHudVisible === "true");
+
   helpButton.addEventListener("click", openHelp);
+  hudToggleButton.addEventListener("click", function onHudToggle() {
+    setStatsOverlayVisible(statsOverlay.hidden);
+  });
   document.addEventListener("contextmenu", suppressLongPressUi);
   document.addEventListener("selectstart", suppressLongPressUi);
   document.addEventListener("dragstart", suppressLongPressUi);
@@ -1451,6 +1650,25 @@ void main() {
   mobileFovSlider.addEventListener("change", updateMobileFovFromInput);
   desktopSpeedSlider.addEventListener("input", updateDesktopSpeedFromInput);
   desktopSpeedSlider.addEventListener("change", updateDesktopSpeedFromInput);
+  renderScaleSlider.addEventListener("input", updateRenderScaleFromSlider);
+  renderScaleSlider.addEventListener("change", updateRenderScaleFromSlider);
+  startResolutionSlider.addEventListener("input", updateStartResolutionFromInput);
+  startResolutionSlider.addEventListener("change", updateStartResolutionFromInput);
+  startFractalButton.addEventListener("click", function onStartFractalClick() {
+    if (sceneStarted) {
+      return;
+    }
+    sceneStarted = true;
+    stopStartPreview();
+    startScreen.hidden = true;
+    renderScaleValue = previewRenderScale;
+    renderScaleSlider.value = renderScaleValue.toFixed(2);
+    renderScaleValueEl.textContent = renderScaleValue.toFixed(2) + "x";
+    setRuntimeUiVisible(true);
+    init().catch(function onInitError(error) {
+      showError("Unexpected startup error.", error);
+    });
+  });
   maxDistSlider.addEventListener("input", updateMaxDistFromSlider);
   maxDistSlider.addEventListener("change", updateMaxDistFromSlider);
   glowSlider.addEventListener("input", updateGlowFromSlider);
@@ -1510,6 +1728,8 @@ void main() {
   updateModeFromInput();
   updateMobileFovFromInput();
   updateDesktopSpeedFromInput();
+  updateRenderScaleFromSlider();
+  updateStartResolutionFromInput();
   updateMaxDistFromSlider();
   updateVisualControlOutputs();
   if (visualPresetSelect.value in VISUAL_PRESETS) {
@@ -1518,6 +1738,8 @@ void main() {
     visualPresetSelect.value = "custom";
   }
   setPremiumUnlocked(false);
+  setRuntimeUiVisible(false);
+  stopStartPreview = initStartPreview();
   initializeMonetization().catch(function onInitMonetizationError(error) {
     showError("Monetization initialization failed.", error);
   });
@@ -1756,6 +1978,7 @@ void main() {
       uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
+      uRenderScale: gl.getUniformLocation(program, "uRenderScale"),
       uFovOverride: gl.getUniformLocation(program, "uFovOverride"),
       uLookDelta: gl.getUniformLocation(program, "uLookDelta"),
       channels: channels,
@@ -1837,6 +2060,9 @@ void main() {
     }
     if (bundle.uLowPowerMode !== null) {
       gl.uniform1i(bundle.uLowPowerMode, lowPowerModeValue);
+    }
+    if (bundle.uRenderScale !== null) {
+      gl.uniform1f(bundle.uRenderScale, renderScaleValue);
     }
     if (bundle.uFovOverride !== null) {
       gl.uniform1f(bundle.uFovOverride, fovOverrideValue);
@@ -2049,6 +2275,41 @@ void main() {
     let lastTime = performance.now() * 0.001;
     let lastPresentTime = lastTime;
     let currentTimeSec = lastTime;
+    let fpsSmoothed = 60.0;
+    let lastStatsSampleTime = 0.0;
+    const stateStatsPixels = new Float32Array(STATE_WIDTH * STATE_HEIGHT * 4);
+
+    function updateStatsOverlay(now, deltaSec) {
+      if (statsOverlay.hidden) {
+        return;
+      }
+
+      fpsSmoothed = fpsSmoothed * 0.9 + (1.0 / Math.max(deltaSec, 1e-4)) * 0.1;
+      if (now - lastStatsSampleTime > 0.2) {
+        lastStatsSampleTime = now;
+        const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, readState.framebuffer);
+        gl.readPixels(0, 0, STATE_WIDTH, STATE_HEIGHT, gl.RGBA, gl.FLOAT, stateStatsPixels);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
+
+        const posX = stateStatsPixels[0];
+        const posY = stateStatsPixels[1];
+        const posZ = stateStatsPixels[2];
+        const moveStep = Math.max(stateStatsPixels[5], 0.01);
+        const baseFov = Math.max(stateStatsPixels[6], 0.01);
+        const proximityZoom = clamp(stateStatsPixels[7], 0.0, 0.85);
+        const shift = keyboardState[16] > 0 ? 4.0 : 1.0;
+        const speed = 2.5 * moveStep * moveScaleValue * shift;
+        const effectiveFov = (fovOverrideValue > 0.0 ? fovOverrideValue : baseFov) * (1.0 + proximityZoom * 1.35);
+
+        statsPosition.textContent =
+          posX.toFixed(2) + ", " + posY.toFixed(2) + ", " + posZ.toFixed(2);
+        statsSpeed.textContent = speed.toFixed(2);
+        statsZoom.textContent = effectiveFov.toFixed(2);
+      }
+
+      statsFps.textContent = fpsSmoothed.toFixed(1);
+    }
 
     async function handleScreenshotClick() {
       if (screenshotInProgress) {
@@ -2099,6 +2360,7 @@ void main() {
             uBaseColor: baseColorRgb,
             uSecondaryColor: secondaryColorRgb,
             uScreenshotJitter: [0.0, 0.0],
+            uRenderScale: renderScaleValue,
             uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue,
             uMbIters: premiumProfile ? premiumProfile.uMbIters : mbItersValue,
             uLowPowerMode: premiumProfile ? premiumProfile.uLowPowerMode : lowPowerModeValue,
@@ -2160,6 +2422,8 @@ void main() {
       readState = writeState;
       writeState = temp;
 
+      updateStatsOverlay(now, delta);
+
       frame += 1;
       requestAnimationFrame(render);
     }
@@ -2167,7 +2431,4 @@ void main() {
     requestAnimationFrame(render);
   }
 
-  init().catch(function onInitError(error) {
-    showError("Unexpected startup error.", error);
-  });
 })();

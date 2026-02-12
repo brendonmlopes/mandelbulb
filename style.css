@@ -108,8 +108,116 @@ body.pointer-look-active #glCanvas {
 .help-pointer-hint[hidden],
 .mobile-controls[hidden],
 .mobile-fov-control[hidden],
-.desktop-speed-control[hidden] {
+.desktop-speed-control[hidden],
+.start-screen[hidden],
+.stats-overlay[hidden] {
   display: none !important;
+}
+
+.start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(34, 95, 132, 0.35), transparent 48%),
+    radial-gradient(circle at 84% 78%, rgba(176, 113, 43, 0.24), transparent 44%),
+    rgba(5, 12, 18, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.start-screen-card {
+  width: min(980px, calc(100vw - 28px));
+  border: 1px solid rgba(153, 206, 214, 0.52);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(8, 23, 32, 0.94), rgba(12, 31, 41, 0.93));
+  box-shadow: 0 20px 48px rgba(2, 8, 12, 0.55);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.start-preview-block {
+  display: grid;
+  gap: 8px;
+}
+
+#startPreviewCanvas {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 1px solid rgba(149, 208, 215, 0.58);
+  border-radius: 12px;
+  background: linear-gradient(165deg, rgba(9, 24, 34, 0.96), rgba(7, 18, 25, 0.96));
+  box-shadow: inset 0 0 24px rgba(14, 36, 49, 0.55), 0 10px 26px rgba(2, 8, 12, 0.35);
+}
+
+.start-preview-fps {
+  margin: 0;
+  color: rgba(234, 246, 249, 0.94);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.start-controls-block {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.start-title {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: 0.03em;
+}
+
+.start-warning {
+  margin: 0;
+  border: 1px solid rgba(240, 180, 106, 0.5);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(38, 23, 8, 0.48);
+  color: rgba(252, 234, 212, 0.93);
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.start-fractal-button {
+  justify-self: start;
+}
+
+.stats-overlay {
+  position: fixed;
+  top: 160px;
+  right: 18px;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(8, 24, 33, 0.9), rgba(12, 32, 43, 0.84));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
+}
+
+.stats-overlay p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(240, 250, 252, 0.95);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.stats-overlay strong {
+  color: var(--ui-muted);
+  font-size: 11px;
 }
 
 .movement-hint--fading {
@@ -915,6 +1023,25 @@ body.pointer-look-active #glCanvas {
     top: 12px;
     right: 12px;
     gap: 8px;
+  }
+
+  .stats-overlay {
+    top: 150px;
+    right: 12px;
+    min-width: 190px;
+  }
+
+  .start-screen {
+    padding: 12px;
+  }
+
+  .start-screen-card {
+    width: calc(100vw - 16px);
+    grid-template-columns: 1fr;
+  }
+
+  .start-title {
+    font-size: 24px;
   }
 
   .overlay-button {

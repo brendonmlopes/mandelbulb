@@ -13,6 +13,32 @@
 <body>
     <canvas id="glCanvas" aria-label="Mandelbulb viewport"></canvas>
 
+    <section id="startScreen" class="start-screen" aria-label="Startup menu">
+        <div class="start-screen-card">
+            <div class="start-preview-block">
+                <canvas id="startPreviewCanvas" width="360" height="220" aria-label="Surface preview"></canvas>
+                <p class="start-preview-fps">Preview FPS: <span id="startPreviewFps">0</span></p>
+            </div>
+            <div class="start-controls-block">
+                <h1 class="start-title">Mandelbulb Explorer</h1>
+                <p class="start-warning">
+                    Choose your render resolution before starting. Higher resolution looks sharper but can seriously
+                    reduce FPS or crash weaker systems. Watch the preview FPS to pick a safe value.
+                </p>
+                <label class="setting-row" for="startResolutionSlider">
+                    <span>Startup resolution scale</span>
+                    <div class="setting-inline">
+                        <input id="startResolutionSlider" type="range" min="0.5" max="1.5" step="0.05" value="1">
+                        <output id="startResolutionValue" class="setting-value">1.00x</output>
+                    </div>
+                </label>
+                <button id="startFractalButton" class="overlay-button start-fractal-button" type="button">
+                    Start fractal
+                </button>
+            </div>
+        </div>
+    </section>
+
     <div class="social-links" aria-label="Social links">
         <a class="social-link" href="https://x.com/stack_overchill" target="_blank" rel="noopener noreferrer" aria-label="X profile">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -64,7 +90,17 @@
             aria-controls="settingsDialog">
             Settings
         </button>
+        <button id="hudToggleButton" class="overlay-button" type="button" aria-controls="statsOverlay">
+            HUD
+        </button>
     </div>
+
+    <aside id="statsOverlay" class="stats-overlay" aria-label="Status overlay" hidden>
+        <p><strong>POS</strong> <span id="statsPosition">0.00, 0.00, 0.00</span></p>
+        <p><strong>FPS</strong> <span id="statsFps">0.0</span></p>
+        <p><strong>SPEED</strong> <span id="statsSpeed">0.00</span></p>
+        <p><strong>ZOOM</strong> <span id="statsZoom">1.00</span></p>
+    </aside>
 
     <div id="helpPointerHint" class="help-pointer-hint" aria-label="Help shortcut" hidden>
         <span class="help-pointer-text">More controls in Help</span>
@@ -109,8 +145,16 @@
                     aria-label="Close settings">Close</button>
             </div>
 
-            <label class="setting-row" for="minHitSlider">
+            <label class="setting-row" for="renderScaleSlider">
                 <span>Resolution</span>
+                <div class="setting-inline">
+                    <input id="renderScaleSlider" type="range" min="0.5" max="1.5" step="0.05" value="1">
+                    <output id="renderScaleValue" class="setting-value">1.00x</output>
+                </div>
+            </label>
+
+            <label class="setting-row" for="minHitSlider">
+                <span>Detail threshold</span>
                 <div class="setting-inline">
                     <input id="minHitSlider" type="range" min="0" max="10" step="0.01" value="3.75">
                     <output id="minHitValue" class="setting-value">3.16e-4</output>

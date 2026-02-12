@@ -26,6 +26,7 @@ uniform float uRoughness;
 uniform vec3 uBaseColor;
 uniform vec3 uSecondaryColor;
 uniform vec2 uScreenshotJitter;
+uniform float uRenderScale;
 uniform int uMaxSteps;
 uniform int uMbIters;
 uniform int uLowPowerMode;
@@ -100,7 +101,8 @@ float mapScene(vec3 p)
 
 vec3 calcNormal(vec3 p)
 {
-    float e = max(uEps, 1e-5);
+    float detailScale = max(uRenderScale, 0.5);
+    float e = max(uEps / detailScale, 1e-5);
     vec2 h = vec2(e, -e);
     return normalize(
         h.xyy * mapScene(p + h.xyy) +
