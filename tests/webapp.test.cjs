@@ -96,6 +96,12 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(html).toMatch(/id=["']minHitSlider["']/i);
     expect(html).toMatch(/id=["']minHitValue["']/i);
     expect(html).toMatch(/id=["']modeSelect["']/i);
+    expect(html).toMatch(/Classic\s+Mandelbulb/i);
+    expect(html).toMatch(/Warped\s+Mandelbulb/i);
+    expect(html).toMatch(/Sinefold\s+Mandelbulb/i);
+    expect(html).toMatch(/Mandelbox/i);
+    expect(html).toMatch(/Julia\s+Bulb/i);
+    expect(html).toMatch(/Gyroid\s+Hybrid/i);
     expect(html).toMatch(/id=["']maxDistSlider["']/i);
     expect(html).toMatch(/id=["']glowSlider["']/i);
     expect(html).toMatch(/id=["']stepTintSlider["']/i);
@@ -276,6 +282,9 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(imageShader).toMatch(/MAX_STEPS_CAP\s*=\s*1000/);
     expect(imageShader).toMatch(/uMode\s*==\s*2/);
     expect(imageShader).toMatch(/uMode\s*==\s*3/);
+    expect(imageShader).toMatch(/uMode\s*==\s*4/);
+    expect(imageShader).toMatch(/uMode\s*==\s*5/);
+    expect(imageShader).toMatch(/uMode\s*==\s*6/);
     expect(imageShader).toMatch(/i\s*>=\s*uMaxSteps/);
     expect(imageShader).toMatch(/i\s*>=\s*uMbIters/);
     expect(imageShader).toMatch(/vec3\s+z\s*=\s*\(uMode\s*==\s*3\)\s*\?\s*sin\(p\)\s*:\s*p\s*;/);
@@ -316,6 +325,7 @@ describe("Mandelbulb web app smoke suite", () => {
     expect(source).toContain("Math.pow(10");
     expect(source).toContain("settingsButton");
     expect(source).toContain("modeValue");
+    expect(source).toContain("parsed < 1 || parsed > 6");
     expect(source).toContain("MOVEMENT_HINT_KEYCODES");
     expect(source).toContain("TURN_HINT_KEYCODES");
     expect(source).toContain("MOBILE_DEFAULTS");

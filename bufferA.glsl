@@ -57,12 +57,108 @@ float mandelbulbDE(vec3 p)
     return 0.5 * log(r) * r / dr;
 }
 
+float mandelboxDE(vec3 p)
+{
+    vec3 z = p;
+    float dr = 1.0;
+    const float scale = -1.6;
+    const float minRadius2 = 0.25;
+    const float fixedRadius2 = 1.0;
+
+    for (int i = 0; i < MB_ITERS_CAP; i++)
+    {
+        if (i >= uMbIters) break;
+
+        z = clamp(z, -1.0, 1.0) * 2.0 - z;
+        float r2 = dot(z, z);
+        if (r2 < minRadius2)
+        {
+            float m = fixedRadius2 / minRadius2;
+            z *= m;
+            dr *= m;
+        }
+        else if (r2 < fixedRadius2)
+        {
+            float m = fixedRadius2 / r2;
+            z *= m;
+            dr *= m;
+        }
+
+        z = z * scale + p;
+        dr = dr * abs(scale) + 1.0;
+        if (dot(z, z) > 100.0) break;
+    }
+
+    return length(z) / max(abs(dr), 1e-5);
+}
+
+float juliaBulbDE(vec3 p)
+{
+    const float power = 8.0;
+    vec3 c = vec3(-0.32, 0.56, -0.14);
+    vec3 z = p;
+    float dr = 1.0;
+    float r = 0.0;
+
+    for (int i = 0; i < MB_ITERS_CAP; i++)
+    {
+        if (i >= uMbIters) break;
+        r = length(z);
+        if (r > 4.0) break;
+
+        float theta = acos(clamp(z.z / max(r, 1e-8), -1.0, 1.0));
+        float phi = atan(z.y, z.x);
+
+        dr = pow(r, power - 1.0) * power * dr + 1.0;
+
+        float zr = pow(r, power);
+        theta *= power;
+        phi *= power;
+        z = zr * vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)) + c;
+    }
+
+    return 0.5 * log(max(r, 1e-6)) * r / max(dr, 1e-5);
+}
+
+float gyroidHybridDE(vec3 p)
+{
+    vec3 q = p;
+    float foldScale = 1.0;
+    for (int i = 0; i < 6; i++)
+    {
+        if (i >= max(3, uMbIters / 3)) break;
+        q = abs(q) - vec3(1.05, 1.12, 0.98);
+        q = q.yzx;
+        foldScale *= 1.22;
+    }
+
+    float gyroid = abs(dot(sin(p * 1.55), cos(p.zxy * 1.55))) - 0.34;
+    float folded = (length(q) - 0.72) / foldScale;
+    return min(gyroid * 0.62, folded);
+}
+
 float mapScene(vec3 p)
 {
     if (uMode == 2)
     {
         return mandelbulbDE(sin(p));
     }
+
+    if (uMode == 4)
+    {
+        return mandelboxDE(p);
+    }
+
+    if (uMode == 5)
+    {
+        return juliaBulbDE(p);
+    }
+
+    if (uMode == 6)
+    {
+        return gyroidHybridDE(p);
+    }
+
     return mandelbulbDE(p);
 }
 

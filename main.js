@@ -1535,7 +1535,7 @@ void main() {
 
   function updateModeFromInput() {
     const parsed = Number(modeSelect.value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 6) {
       modeValue = 1;
       modeSelect.value = "1";
       return;

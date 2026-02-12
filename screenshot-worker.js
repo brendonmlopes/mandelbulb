@@ -167,24 +167,28 @@ function applyAutoEnhance(rgb, width, height, denoiseStrength) {
     hist[Math.min(255, Math.max(0, (y * 255) | 0))] += 1;
   }
 
-  const lowCut = computePercentileThreshold(hist, 0.003, pixelCount);
-  const highCut = computePercentileThreshold(hist, 0.995, pixelCount);
-  const range = Math.max(0.06, highCut - lowCut);
+  const lowCut = computePercentileThreshold(hist, 0.004, pixelCount);
+  const highCut = computePercentileThreshold(hist, 0.996, pixelCount);
+  const range = Math.max(0.12, highCut - lowCut);
 
   const avgR = sumR / pixelCount;
   const avgG = sumG / pixelCount;
   const avgB = sumB / pixelCount;
   const avgGray = Math.max(1e-4, (avgR + avgG + avgB) / 3);
 
-  const gainR = clamp(avgGray / Math.max(avgR, 1e-4), 0.9, 1.12);
-  const gainG = clamp(avgGray / Math.max(avgG, 1e-4), 0.9, 1.12);
-  const gainB = clamp(avgGray / Math.max(avgB, 1e-4), 0.9, 1.12);
+  const gainR = clamp(avgGray / Math.max(avgR, 1e-4), 0.95, 1.06);
+  const gainG = clamp(avgGray / Math.max(avgG, 1e-4), 0.95, 1.06);
+  const gainB = clamp(avgGray / Math.max(avgB, 1e-4), 0.95, 1.06);
+  const enhanceMix = 0.18;
 
   const out = new Float32Array(rgb.length);
   for (let i = 0; i < rgb.length; i += 3) {
-    let r = clamp((rgb[i] - lowCut) / range, 0, 1);
-    let g = clamp((rgb[i + 1] - lowCut) / range, 0, 1);
-    let b = clamp((rgb[i + 2] - lowCut) / range, 0, 1);
+    const sourceR = clamp(rgb[i], 0, 1);
+    const sourceG = clamp(rgb[i + 1], 0, 1);
+    const sourceB = clamp(rgb[i + 2], 0, 1);
+    let r = clamp((sourceR - lowCut) / range, 0, 1);
+    let g = clamp((sourceG - lowCut) / range, 0, 1);
+    let b = clamp((sourceB - lowCut) / range, 0, 1);
 
     r = clamp(r * gainR, 0, 1);
     g = clamp(g * gainG, 0, 1);
@@ -194,15 +198,23 @@ function applyAutoEnhance(rgb, width, height, denoiseStrength) {
     g = g * g * (3 - 2 * g);
     b = b * b * (3 - 2 * b);
 
+    r = r / (1 + 0.18 * r);
+    g = g / (1 + 0.18 * g);
+    b = b / (1 + 0.18 * b);
+
     const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     const maxC = Math.max(r, g, b);
     const minC = Math.min(r, g, b);
     const sat = maxC - minC;
-    const vibrance = 0.06 + 0.2 * (1 - sat);
+    const vibrance = 0.01 + 0.03 * (1 - sat);
 
-    out[i] = clamp(luma + (r - luma) * (1 + vibrance), 0, 1);
-    out[i + 1] = clamp(luma + (g - luma) * (1 + vibrance), 0, 1);
-    out[i + 2] = clamp(luma + (b - luma) * (1 + vibrance), 0, 1);
+    const enhancedR = clamp(luma + (r - luma) * (1 + vibrance), 0, 1);
+    const enhancedG = clamp(luma + (g - luma) * (1 + vibrance), 0, 1);
+    const enhancedB = clamp(luma + (b - luma) * (1 + vibrance), 0, 1);
+
+    out[i] = sourceR + (enhancedR - sourceR) * enhanceMix;
+    out[i + 1] = sourceG + (enhancedG - sourceG) * enhanceMix;
+    out[i + 2] = sourceB + (enhancedB - sourceB) * enhanceMix;
   }
 
   if (denoiseStrength <= 0) {
