@@ -1752,6 +1752,7 @@ void main() {
       uRoughness: gl.getUniformLocation(program, "uRoughness"),
       uBaseColor: gl.getUniformLocation(program, "uBaseColor"),
       uSecondaryColor: gl.getUniformLocation(program, "uSecondaryColor"),
+      uScreenshotJitter: gl.getUniformLocation(program, "uScreenshotJitter"),
       uMaxSteps: gl.getUniformLocation(program, "uMaxSteps"),
       uMbIters: gl.getUniformLocation(program, "uMbIters"),
       uLowPowerMode: gl.getUniformLocation(program, "uLowPowerMode"),
@@ -1824,6 +1825,9 @@ void main() {
     }
     if (bundle.uSecondaryColor !== null) {
       gl.uniform3f(bundle.uSecondaryColor, secondaryColorRgb[0], secondaryColorRgb[1], secondaryColorRgb[2]);
+    }
+    if (bundle.uScreenshotJitter !== null) {
+      gl.uniform2f(bundle.uScreenshotJitter, 0.0, 0.0);
     }
     if (bundle.uMaxSteps !== null) {
       gl.uniform1i(bundle.uMaxSteps, maxStepsValue);
@@ -2062,6 +2066,10 @@ void main() {
 
         const dims = getScreenshotDimensions();
         const premiumProfile = isPremiumUnlocked ? getPremiumScreenshotProfile() : null;
+        const screenshotPreset = isPremiumUnlocked ? getSelectedPremiumPreset() : "balanced";
+        const screenshotOptions = screenshotPreset === "ultra"
+          ? { samples: 24, autoEnhance: true, denoiseStrength: 0.24 }
+          : { samples: 10, autoEnhance: true, denoiseStrength: 0.14 };
         const screenshotPayload = {
           width: dims.width,
           height: dims.height,
@@ -2069,6 +2077,7 @@ void main() {
           mainImageSource: rawMainImage,
           stateBuffer: statePixels.buffer,
           watermarkText: isPremiumUnlocked ? "" : WATERMARK_TEXT,
+          screenshotOptions: screenshotOptions,
           uniforms: {
             iTime: currentTimeSec,
             iTimeDelta: 1.0 / 60.0,
@@ -2089,6 +2098,7 @@ void main() {
             uRoughness: roughnessValue,
             uBaseColor: baseColorRgb,
             uSecondaryColor: secondaryColorRgb,
+            uScreenshotJitter: [0.0, 0.0],
             uMaxSteps: premiumProfile ? premiumProfile.uMaxSteps : maxStepsValue,
             uMbIters: premiumProfile ? premiumProfile.uMbIters : mbItersValue,
             uLowPowerMode: premiumProfile ? premiumProfile.uLowPowerMode : lowPowerModeValue,

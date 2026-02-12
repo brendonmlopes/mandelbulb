@@ -25,6 +25,7 @@ uniform float uFogDensity;
 uniform float uRoughness;
 uniform vec3 uBaseColor;
 uniform vec3 uSecondaryColor;
+uniform vec2 uScreenshotJitter;
 uniform int uMaxSteps;
 uniform int uMbIters;
 uniform int uLowPowerMode;
@@ -209,7 +210,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     vec3 fwd = forwardFromYawPitch(yaw, pitch);
     vec3 ta = ro + fwd * 3.0;
-    vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+    vec2 uv = (fragCoord + uScreenshotJitter - 0.5 * iResolution.xy) / iResolution.y;
     mat3 cam = makeCamera(ro, ta, 0.0);
 
     float baseFov = (uFovOverride > 0.0) ? uFovOverride : s1.z;
