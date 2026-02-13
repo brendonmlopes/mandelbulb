@@ -208,6 +208,8 @@ void main() {
   const CHECKOUT_SESSION_ID_KEY = "session_id";
   const VISUAL_PRESET_KEY = "mandelbulb_visual_preset";
   const HUD_VISIBLE_KEY = "mandelbulb_hud_visible";
+  const UI_BUTTON_PRESS_CLASS = "ui-button-pressing";
+  const UI_BUTTON_PRESS_DURATION_MS = 360;
   const VISUAL_PRESETS = {
     vibrant: {
       glowStrength: 0.18,
@@ -322,6 +324,7 @@ void main() {
   const keyState = new Uint8Array(KEYBOARD_TEX_WIDTH);
   const touchPressCount = new Uint8Array(KEYBOARD_TEX_WIDTH);
   const pointerToKeyCode = new Map();
+  const buttonPressTimers = new WeakMap();
   let helpOpen = false;
   let settingsOpen = false;
   let minHitExponent = -3.5;
@@ -419,6 +422,43 @@ void main() {
       mobileFovControl.hidden = true;
       desktopSpeedControl.hidden = !visible;
     }
+  }
+
+  function triggerButtonPressAnimation(button) {
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const existingTimerId = buttonPressTimers.get(button);
+    if (typeof existingTimerId === "number") {
+      window.clearTimeout(existingTimerId);
+    }
+
+    button.classList.remove(UI_BUTTON_PRESS_CLASS);
+    void button.offsetWidth;
+    button.classList.add(UI_BUTTON_PRESS_CLASS);
+
+    const timerId = window.setTimeout(function clearButtonPressAnimation() {
+      button.classList.remove(UI_BUTTON_PRESS_CLASS);
+      buttonPressTimers.delete(button);
+    }, UI_BUTTON_PRESS_DURATION_MS);
+    buttonPressTimers.set(button, timerId);
+  }
+
+  function bindButtonPressAnimations() {
+    document.addEventListener("click", function onAnyButtonClick(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const button = target.closest("button");
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      triggerButtonPressAnimation(button);
+    });
   }
 
   function updateStartResolutionFromInput() {
@@ -1578,6 +1618,7 @@ void main() {
 
   applyMobileProfile();
   bindMobileControls();
+  bindButtonPressAnimations();
 
   const storedPreset = localStorage.getItem(PREMIUM_PRESET_KEY);
   if (storedPreset === "ultra" || storedPreset === "balanced") {

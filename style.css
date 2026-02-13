@@ -126,6 +126,36 @@ body.pointer-look-active #glCanvas {
     radial-gradient(circle at 84% 78%, rgba(176, 113, 43, 0.24), transparent 44%),
     rgba(5, 12, 18, 0.88);
   backdrop-filter: blur(6px);
+  overflow: hidden;
+  isolation: isolate;
+  animation: startMenuBackdropIn 900ms cubic-bezier(0.16, 0.84, 0.23, 1) both;
+}
+
+.start-screen::before,
+.start-screen::after {
+  content: "";
+  position: absolute;
+  inset: -34vmax;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  z-index: 0;
+}
+
+.start-screen::before {
+  background:
+    radial-gradient(circle at 24% 32%, rgba(82, 188, 236, 0.48), transparent 54%),
+    radial-gradient(circle at 72% 68%, rgba(70, 157, 222, 0.3), transparent 60%);
+  transform: translate(-48vw, -22vh) rotate(-18deg) scale(1.28);
+  animation: startMenuSweepA 1300ms cubic-bezier(0.16, 0.84, 0.23, 1) 70ms both;
+}
+
+.start-screen::after {
+  background:
+    radial-gradient(circle at 68% 24%, rgba(245, 165, 72, 0.36), transparent 52%),
+    radial-gradient(circle at 36% 80%, rgba(238, 118, 86, 0.28), transparent 60%);
+  transform: translate(46vw, 24vh) rotate(16deg) scale(1.24);
+  animation: startMenuSweepB 1450ms cubic-bezier(0.16, 0.84, 0.23, 1) 120ms both;
 }
 
 .start-screen-card {
@@ -138,11 +168,20 @@ body.pointer-look-active #glCanvas {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 16px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(34vh) scale(0.76) rotate(-3deg);
+  filter: blur(14px) saturate(0.55);
+  animation: startMenuCardIn 980ms cubic-bezier(0.16, 0.84, 0.23, 1) 210ms both;
 }
 
 .start-preview-block {
   display: grid;
   gap: 8px;
+  opacity: 0;
+  transform: translateX(-30vw) scale(0.9);
+  animation: startMenuColumnInLeft 760ms cubic-bezier(0.16, 0.84, 0.23, 1) 520ms both;
 }
 
 #startPreviewCanvas {
@@ -152,6 +191,10 @@ body.pointer-look-active #glCanvas {
   border-radius: 12px;
   background: linear-gradient(165deg, rgba(9, 24, 34, 0.96), rgba(7, 18, 25, 0.96));
   box-shadow: inset 0 0 24px rgba(14, 36, 49, 0.55), 0 10px 26px rgba(2, 8, 12, 0.35);
+  opacity: 0;
+  transform-origin: 40% 55%;
+  transform: scale(1.28) rotate(-4deg);
+  animation: startMenuPreviewIn 930ms cubic-bezier(0.16, 0.84, 0.23, 1) 610ms both;
 }
 
 .start-preview-fps {
@@ -160,18 +203,27 @@ body.pointer-look-active #glCanvas {
   font-size: 13px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: startMenuFpsIn 620ms cubic-bezier(0.2, 0.85, 0.24, 1) 860ms both;
 }
 
 .start-controls-block {
   display: grid;
   align-content: start;
   gap: 12px;
+  opacity: 0;
+  transform: translateX(30vw) scale(0.9);
+  animation: startMenuColumnInRight 760ms cubic-bezier(0.16, 0.84, 0.23, 1) 560ms both;
 }
 
 .start-title {
   margin: 0;
   font-size: 30px;
   letter-spacing: 0.03em;
+  opacity: 0;
+  transform: translateY(34px) scale(0.94);
+  animation: startMenuItemIn 620ms cubic-bezier(0.2, 0.85, 0.24, 1) 820ms both;
 }
 
 .start-warning {
@@ -183,10 +235,183 @@ body.pointer-look-active #glCanvas {
   color: rgba(252, 234, 212, 0.93);
   font-size: 13px;
   line-height: 1.42;
+  opacity: 0;
+  transform: translateY(42px) scale(0.94);
+  animation: startMenuItemIn 620ms cubic-bezier(0.2, 0.85, 0.24, 1) 920ms both;
 }
 
 .start-fractal-button {
   justify-self: start;
+  opacity: 0;
+  transform: translateY(56px) scale(0.72) rotate(-5deg);
+  animation: startMenuButtonIn 780ms cubic-bezier(0.18, 0.82, 0.24, 1) 1020ms both;
+}
+
+@keyframes startMenuBackdropIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes startMenuSweepA {
+  0% {
+    opacity: 0;
+    transform: translate(-48vw, -22vh) rotate(-18deg) scale(1.28);
+  }
+
+  42% {
+    opacity: 0.86;
+  }
+
+  100% {
+    opacity: 0.52;
+    transform: translate(10vw, -3vh) rotate(-4deg) scale(1.02);
+  }
+}
+
+@keyframes startMenuSweepB {
+  0% {
+    opacity: 0;
+    transform: translate(46vw, 24vh) rotate(16deg) scale(1.24);
+  }
+
+  48% {
+    opacity: 0.72;
+  }
+
+  100% {
+    opacity: 0.46;
+    transform: translate(-8vw, 1vh) rotate(5deg) scale(1.02);
+  }
+}
+
+@keyframes startMenuCardIn {
+  0% {
+    opacity: 0;
+    transform: translateY(34vh) scale(0.76) rotate(-3deg);
+    filter: blur(14px) saturate(0.55);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.02) rotate(0.4deg);
+    filter: blur(0) saturate(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0) saturate(1);
+  }
+}
+
+@keyframes startMenuColumnInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30vw) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes startMenuColumnInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30vw) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes startMenuItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(34px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes startMenuButtonIn {
+  0% {
+    opacity: 0;
+    transform: translateY(56px) scale(0.72) rotate(-5deg);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.06) rotate(1deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes startMenuPreviewIn {
+  from {
+    opacity: 0;
+    transform: scale(1.28) rotate(-4deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes startMenuFpsIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-screen::before,
+  .start-screen::after,
+  .start-screen,
+  .start-screen-card,
+  .start-preview-block,
+  #startPreviewCanvas,
+  .start-preview-fps,
+  .start-controls-block,
+  .start-title,
+  .start-warning,
+  .start-fractal-button {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  button.ui-button-pressing,
+  button.ui-button-pressing::after {
+    animation: none !important;
+  }
+
+  button.ui-button-pressing {
+    filter: none !important;
+  }
 }
 
 .stats-overlay {
@@ -594,6 +819,63 @@ body.pointer-look-active #glCanvas {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(247, 252, 255, 0.34), rgba(133, 214, 223, 0.2) 44%, transparent 74%);
+  transform: scale(0.68);
+}
+
+button.ui-button-pressing {
+  animation: uiButtonPressPulse 360ms cubic-bezier(0.2, 0.84, 0.22, 1);
+}
+
+button.ui-button-pressing::after {
+  animation: uiButtonPressFlash 360ms cubic-bezier(0.2, 0.84, 0.22, 1);
+}
+
+@keyframes uiButtonPressPulse {
+  0% {
+    filter: brightness(1) saturate(1);
+  }
+
+  36% {
+    filter: brightness(1.26) saturate(1.22);
+  }
+
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes uiButtonPressFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.68);
+  }
+
+  44% {
+    opacity: 0.74;
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.26);
+  }
 }
 
 .overlay-button {
